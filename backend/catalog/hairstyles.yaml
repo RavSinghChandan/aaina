@@ -6,6 +6,7 @@
 # professions: corporate creative healthcare uniformed student homemaker athletic any
 # maintenance: low medium high     trim_weeks: typical weeks between trims
 # shape: silhouette used by the offline preview renderer
+# look: what the cut looks like, for the photo editor's prompt
 
 styles:
   # ---------------- women / long and medium ----------------
@@ -21,6 +22,7 @@ styles:
     trim_weeks: 10
     styling_minutes: 5
     shape: long-layered
+    look: long hair past the shoulders with soft long layers and movement
     why: Soft layers add movement and lift without losing length.
     how_to_ask: Keep length, add long layers starting below the chin, light texturising at the ends.
   - id: face-framing-layers
@@ -35,6 +37,7 @@ styles:
     trim_weeks: 8
     styling_minutes: 10
     shape: long-framed
+    look: long hair with face-framing layers starting at the cheekbones
     why: Front pieces that start at the cheekbone soften strong jaws and slim a round face.
     how_to_ask: Shortest front layer at the cheekbone, blend back into length, keep the back full.
   - id: step-cut
@@ -49,6 +52,7 @@ styles:
     trim_weeks: 8
     styling_minutes: 10
     shape: long-stepped
+    look: long hair with visible stepped layers down the back
     why: Visible steps give volume on straight Indian hair that tends to fall flat.
     how_to_ask: Defined steps from the crown down, each step about two inches, keep ends healthy.
   - id: u-cut
@@ -63,6 +67,7 @@ styles:
     trim_weeks: 12
     styling_minutes: 5
     shape: long-u
+    look: long hair cut in a soft U shape at the back, smooth and full
     why: A soft U at the back keeps length while making ends look thicker.
     how_to_ask: U-shape at the back, light layers, no heavy thinning at the ends.
   - id: butterfly-cut
@@ -77,6 +82,7 @@ styles:
     trim_weeks: 8
     styling_minutes: 15
     shape: long-butterfly
+    look: long voluminous hair with short face-framing layers and bouncy blowout ends
     why: Short top layers create a blow-dry bounce; long underneath keeps length.
     how_to_ask: Short face-framing top layers at the chin, long layers underneath, blend for volume.
   - id: curtain-bangs-layers
@@ -91,6 +97,7 @@ styles:
     trim_weeks: 5
     styling_minutes: 10
     shape: long-bangs
+    look: long layered hair with soft curtain bangs parted in the middle
     why: Parted bangs shorten a long face and draw attention to the eyes.
     how_to_ask: Curtain bangs parted in the middle, longest at the cheekbone, layers to blend.
   - id: curly-layered
@@ -105,6 +112,7 @@ styles:
     trim_weeks: 10
     styling_minutes: 10
     shape: medium-curly
+    look: shoulder-length defined curls with even, round volume
     why: Cutting curl by curl removes the triangle shape and gives even, bouncy volume.
     how_to_ask: Dry cut or curl-by-curl, round layers, no razor or heavy thinning.
   - id: textured-lob
@@ -119,6 +127,7 @@ styles:
     trim_weeks: 8
     styling_minutes: 8
     shape: lob
+    look: collarbone-length textured long bob with soft waves
     why: A collarbone length that looks polished at work and grows out gracefully.
     how_to_ask: Collarbone length, slightly longer in front, point-cut texture at the ends.
   - id: feathered-cut
@@ -133,6 +142,7 @@ styles:
     trim_weeks: 8
     styling_minutes: 10
     shape: medium-feathered
+    look: shoulder-length hair with feathered layers flicked back from the face
     why: Feathered sides flick away from the face and widen narrow faces.
     how_to_ask: Feathered layers swept back at the sides, soft movement, medium length.
   # ---------------- women / short ----------------
@@ -148,6 +158,7 @@ styles:
     trim_weeks: 6
     styling_minutes: 5
     shape: bob
+    look: sleek chin-length blunt bob with a straight edge
     why: A clean jaw-length line looks sharp and confident and makes fine hair look thicker.
     how_to_ask: Jaw-length blunt line, no layers, one length all round.
   - id: pixie
@@ -162,6 +173,7 @@ styles:
     trim_weeks: 5
     styling_minutes: 3
     shape: pixie
+    look: short pixie cut with a soft side-swept fringe
     why: Shows off cheekbones and eyes; almost no styling time.
     how_to_ask: Short back and sides, longer textured top, soft fringe swept to one side.
   - id: asymmetric-bob
@@ -176,6 +188,7 @@ styles:
     trim_weeks: 6
     styling_minutes: 8
     shape: bob-asym
+    look: asymmetric bob, longer on one side at the jaw
     why: An angled line breaks up a round or square outline and adds edge.
     how_to_ask: One side chin length, the other two inches longer, stacked back.
   # ---------------- unisex ----------------
@@ -191,6 +204,7 @@ styles:
     trim_weeks: 7
     styling_minutes: 8
     shape: wolf
+    look: shaggy wolf cut, choppy layers, volume at the crown, wispy ends at the neck
     why: Choppy layers with a shaggy crown; strong texture without a harsh line.
     how_to_ask: Heavy layers at the crown, shorter on top, longer at the nape, choppy texture.
   - id: curtain-hair
@@ -205,6 +219,7 @@ styles:
     trim_weeks: 7
     styling_minutes: 8
     shape: curtain
+    look: medium-length hair parted in the middle falling like curtains to the cheekbones
     why: A centre part with length at the front frames the face softly.
     how_to_ask: Leave the front long enough to tuck behind the ears, centre part, tidy the sides.
   - id: buzz-cut
@@ -219,6 +234,7 @@ styles:
     trim_weeks: 3
     styling_minutes: 0
     shape: buzz
+    look: very short even buzz cut all over, scalp slightly visible
     why: Zero styling, very clean, ideal in heat and for active days.
     how_to_ask: One length all over with clippers, guard 2 or 3, clean neckline.
   # ---------------- men ----------------
@@ -234,6 +250,7 @@ styles:
     trim_weeks: 4
     styling_minutes: 5
     shape: side-part
+    look: short neat haircut with a clear side part, top combed smoothly to one side, short tapered sides
     why: The most trusted office look; works with almost every face.
     how_to_ask: Scissor cut, two inches on top, tapered sides, natural side part.
   - id: low-taper-fade
@@ -248,6 +265,7 @@ styles:
     trim_weeks: 3
     styling_minutes: 5
     shape: taper
+    look: short haircut, low taper fade near the ears and neckline, about two inches of natural textured hair on top
     why: A clean, gradual fade that stays office-safe and looks fresh longer.
     how_to_ask: Low taper fade starting just above the ear, blend into a scissor-cut top.
   - id: textured-crop
@@ -262,6 +280,7 @@ styles:
     trim_weeks: 4
     styling_minutes: 3
     shape: crop
+    look: short textured crop, choppy top pushed forward into a short fringe, mid fade sides
     why: A short textured top with a fringe hides a high forehead and needs little styling.
     how_to_ask: Short textured top pushed forward, blunt fringe, mid fade on the sides.
   - id: quiff
@@ -276,6 +295,7 @@ styles:
     trim_weeks: 4
     styling_minutes: 8
     shape: quiff
+    look: short sides with a voluminous quiff swept up and back at the front
     why: Height at the front lengthens a round face and adds confidence.
     how_to_ask: Longer front swept up and back, shorter sides, blow-dry with volume.
   - id: pompadour
@@ -290,6 +310,7 @@ styles:
     trim_weeks: 4
     styling_minutes: 10
     shape: pompadour
+    look: tall glossy pompadour swept up and back, short faded sides
     why: A statement look with volume; best for thick hair.
     how_to_ask: Three to four inches on top, high fade on the sides, styled back with volume.
   - id: crew-cut
@@ -304,6 +325,7 @@ styles:
     trim_weeks: 4
     styling_minutes: 1
     shape: crew
+    look: very short crew cut, short even top about one inch, tightly tapered sides, neat and tidy
     why: Neat, masculine and almost no upkeep between visits.
     how_to_ask: Short tapered sides, slightly longer front graduating shorter to the crown.
   - id: curly-top-fade
@@ -318,6 +340,7 @@ styles:
     trim_weeks: 4
     styling_minutes: 5
     shape: curly-fade
+    look: tight natural curls on top with a high skin fade on the sides
     why: Lets natural curls be the feature while the fade keeps it neat.
     how_to_ask: Keep curl length on top, shape round, mid or high fade, define curls with cream.
   - id: slick-back
@@ -332,6 +355,7 @@ styles:
     trim_weeks: 5
     styling_minutes: 6
     shape: slick-back
+    look: hair slicked straight back with a glossy finish, short sides
     why: Polished and powerful; shows off strong features.
     how_to_ask: Longer on top, tapered sides, styled straight back with pomade.
   - id: hard-part-fade
@@ -346,6 +370,7 @@ styles:
     trim_weeks: 3
     styling_minutes: 5
     shape: hard-part
+    look: short side-parted cut with a shaved hard part line and a skin fade
     why: A shaved part line gives a sharp, deliberate finish.
     how_to_ask: Mid fade, shaved hard part on the natural parting side, combed over top.
   - id: medium-flow
@@ -360,6 +385,7 @@ styles:
     trim_weeks: 8
     styling_minutes: 4
     shape: flow
+    look: medium-length hair flowing back past the ears, natural movement
     why: Relaxed length pushed back behind the ears; effortless and grown-out.
     how_to_ask: Grow to ear length, trim for shape only, light layers so it flows back.
   - id: caesar
@@ -374,5 +400,6 @@ styles:
     trim_weeks: 4
     styling_minutes: 1
     shape: caesar
+    look: short caesar cut with a short straight horizontal fringe, even length all over
     why: A short straight fringe reduces a high forehead or receding hairline.
     how_to_ask: Even short length, short horizontal fringe at the front, tapered sides.

@@ -57,7 +57,7 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
                 <input type="checkbox" [(ngModel)]="consent" />
                 <span><strong>Use my photo for this consultation.</strong><br />
                   @if (tryOn()) {
-                    <span class="muted small">Your face shape is measured on this phone. To show the three cuts on you, the photo is edited by the salon's image service. The three pictures stay with your results. You can skip the photo.</span>
+                    <span class="muted small">Your face shape is measured on this phone. To show the three cuts on you, the photo is edited by an AI model running on this computer. It is never sent to any outside service. The three pictures stay with your results. You can skip the photo.</span>
                   } @else {
                     <span class="muted small">It is used only now and never saved. You can skip the photo.</span>
                   }
@@ -128,7 +128,7 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
               <chakra class="big" [steps]="steps()" [current]="idx()" [spinning]="running()" [finished]="finished()" [beads]="beads()" [hubText]="hub()" />
               @if (!running() && !finished()) {
                 <h2>All set{{ firstName() ? ', ' + firstName() : '' }}.</h2>
-                <p class="muted">Spin the chakra and seven AI agents get to work.@if (tryOn() && consent && photo()) { Putting the three cuts on your photo takes about a minute.}</p>
+                <p class="muted">Spin the chakra and seven AI agents get to work.@if (tryOn() && consent && photo()) { Putting the three cuts on your photo takes about two minutes.}</p>
                 <div class="chips summary">@for (c of summary(); track c) { <span class="pill">{{ c }}</span> }</div>
                 <button type="button" class="btn btn-brand spinbtn" (click)="submit()">Spin the chakra</button>
               } @else {
@@ -409,6 +409,7 @@ export class JourneyPage implements OnInit, OnDestroy {
           hair_rgb: m.hair?.rgb ?? null, skin_rgb: m.skin,
         } } : {}) },
         photo: usePhoto ? this.photo() : null,
+        photo_geometry: usePhoto ? (m?.geometry ?? null) : null,
       });
       this.session.set(usePhoto ? this.photo() : null);
       this.poll(res.id);

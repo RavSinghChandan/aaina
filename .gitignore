@@ -10,3 +10,4 @@ frontend/.angular/
 .vscode/
 .DS_Store
 .logs/
+.qa/

@@ -21,6 +21,15 @@ export interface FaceMeasure {
   beard: boolean;
   /** Skin tone from bare cheek skin, so the preview drawing looks like the customer. */
   skin: [number, number, number];
+  /** Where the hair and face are, so the server's photo editor repaints only the hair. */
+  geometry: Geometry | null;
+}
+export interface Geometry {
+  width: number; height: number;
+  hair_mask: string;                 // PNG data URL, white = hair, at photo size
+  face_oval: [number, number][];
+  up: [number, number]; chin: [number, number];
+  brow_y: number; eye_y: number; nose_y: number; cheek_l: number; cheek_r: number;
 }
 
 // MediaPipe face-mesh landmark indices
@@ -31,6 +40,8 @@ const JAW: [number, number] = [172, 397];
 const EYES: [number, number] = [33, 263];
 const CHIN_PATCH = [152, 175, 199, 200, 148, 377, 176, 400];   // where a beard grows
 const CHEEK_PATCH = [50, 280, 123, 352, 116, 345];              // bare cheek skin below the cheekbones
+const OVAL = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109];
+const BROWS = [105, 334, 66, 296], NOSE_TIP = 1;
 const SKIN_PATCH = [151, 9, 108, 337, 69, 299, 50, 280, 123, 352]; // forehead and cheekbones, clear of glasses lenses
 
 let landmarker: Promise<any> | null = null;
@@ -114,7 +125,16 @@ export async function measureFace(dataUrl: string): Promise<FaceMeasure | { erro
   const lum = (ids: number[]) => avg(ids.map(i => p(i)), px).reduce((a, v, k) => a + v * [0.299, 0.587, 0.114][k], 0);
   const beard = lum(CHIN_PATCH) < lum(CHEEK_PATCH) * 0.62;
   const skin = median(SKIN_PATCH.map(i => avg([p(i)], px)));
-  const hair = await hairStats(img, px, { eyeY: Math.min(eyes[0].y, eyes[1].y), chin, length, cheekL: Math.min(ck[0].x, ck[1].x), cheekR: Math.max(ck[0].x, ck[1].x) });
+  const hairRes = await hairStats(img, px, { eyeY: Math.min(eyes[0].y, eyes[1].y), chin, length, cheekL: Math.min(ck[0].x, ck[1].x), cheekR: Math.max(ck[0].x, ck[1].x) });
+  const hair = hairRes ? { rgb: hairRes.rgb, color: hairRes.color, length: hairRes.length } : null;
+  const r1 = (v: number) => Math.round(v);
+  const geometry: Geometry | null = hairRes ? {
+    width: W, height: H, hair_mask: hairRes.maskPng,
+    face_oval: OVAL.map(i => { const q = p(i); return [r1(q.x), r1(q.y)] as [number, number]; }),
+    up: [r1(up.x), r1(up.y)], chin: [r1(chin.x), r1(chin.y)],
+    brow_y: r1(Math.min(...BROWS.map(i => p(i).y))), eye_y: r1(Math.min(eyes[0].y, eyes[1].y)), nose_y: r1(p(NOSE_TIP).y),
+    cheek_l: r1(Math.min(ck[0].x, ck[1].x)), cheek_r: r1(Math.max(ck[0].x, ck[1].x)),
+  } : null;
   if (beard) notes.push('Beard');
   if (hair) notes.push(`${hair.color} hair`);
 
@@ -128,7 +148,7 @@ export async function measureFace(dataUrl: string): Promise<FaceMeasure | { erro
       { id: 'jaw', a: jw[0], b: jw[1] },
     ],
     width: W, height: H,
-    hair, beard, skin,
+    hair, beard, skin, geometry,
   };
 }
 
@@ -155,7 +175,8 @@ function avg(pts: Point[], px: Px): [number, number, number] {
   }
   return n ? [s[0] / n, s[1] / n, s[2] / n] : [0, 0, 0];
 }
-async function hairStats(img: HTMLImageElement, px: Px, f: { eyeY: number; chin: Point; length: number; cheekL: number; cheekR: number }): Promise<FaceMeasure['hair']> {
+async function hairStats(img: HTMLImageElement, px: Px, f: { eyeY: number; chin: Point; length: number; cheekL: number; cheekR: number }):
+    Promise<{ rgb: [number, number, number]; color: string; length: 'short' | 'medium' | 'long'; maskPng: string } | null> {
   let seg: any;
   try { seg = await loadHair(); } catch { return null; }
   let mask: Uint8Array | null = null, mw = 0, mh = 0;
@@ -184,7 +205,14 @@ async function hairStats(img: HTMLImageElement, px: Px, f: { eyeY: number; chin:
   const rgb: [number, number, number] = [Math.round(s[0] / n), Math.round(s[1] / n), Math.round(s[2] / n)];
   const below = (lowest - f.chin.y) / f.length;
   const length = below > 0.35 ? 'long' : below > -0.15 ? 'medium' : 'short';
-  return { rgb, color: colorName(rgb), length };
+  // the hair mask as a white-on-black PNG at photo size
+  const mc = document.createElement('canvas'); mc.width = mw; mc.height = mh;
+  const mx = mc.getContext('2d')!, id = mx.createImageData(mw, mh);
+  for (let i = 0; i < mk.length; i++) { const v = mk[i] ? 255 : 0; id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = v; id.data[i * 4 + 3] = 255; }
+  mx.putImageData(id, 0, 0);
+  const out = document.createElement('canvas'); out.width = px.w; out.height = px.h;
+  out.getContext('2d')!.drawImage(mc, 0, 0, px.w, px.h);
+  return { rgb, color: colorName(rgb), length, maskPng: out.toDataURL('image/png') };
 }
 
 export function colorName([r, g, b]: [number, number, number]): string {

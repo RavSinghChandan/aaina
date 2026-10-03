@@ -1,0 +1,7 @@
+# Optional: photo try-on on this machine (AAINA_IMAGE=local). ~2 GB model download on first run.
+torch
+diffusers
+transformers
+accelerate
+safetensors
+opencv-python-headless

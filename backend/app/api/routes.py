@@ -115,6 +115,7 @@ class ConsultationIn(BaseModel):
     answers: dict[str, Any] = Field(default_factory=dict)
     photo: str | None = None
     extra_photos: list[str] = Field(default_factory=list)
+    photo_geometry: dict[str, Any] | None = None     # hair mask + face outline from the phone, for the photo editor
 
 
 class ChooseIn(BaseModel):
@@ -203,7 +204,10 @@ async def start_consultation(body: ConsultationIn, background: BackgroundTasks, 
         db.commit()
         cid = c.id
 
-    images = {"photo": photo, "extra": extras}          # in memory only; never written unless opted in
+    geometry = body.photo_geometry if photo else None
+    if geometry and not (isinstance(geometry.get("hair_mask"), str) and geometry["hair_mask"].startswith("data:image/png;base64,")):
+        raise HTTPException(422, "photo_geometry.hair_mask must be a PNG data URL")
+    images = {"photo": photo, "extra": extras, "geometry": geometry}   # in memory only; never written unless opted in
     background.add_task(run_consultation, st, cid, spec, answers, images)
     return {"id": cid, "status": "queued"}
 
