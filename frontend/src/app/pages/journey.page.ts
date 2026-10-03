@@ -51,11 +51,17 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
               <ul class="how">
                 <li><span>📷</span><div><strong>One selfie</strong><p class="muted small">We measure your face shape on this phone.</p></div></li>
                 <li><span>💬</span><div><strong>A few quick taps</strong><p class="muted small">Your work, lifestyle, taste, hair and skin.</p></div></li>
-                <li><span>✨</span><div><strong>Three cuts made for you</strong><p class="muted small">With hair and face routines and a care calendar.</p></div></li>
+                <li><span>✨</span><div><strong>Your top three cuts{{ tryOn() ? ', on your own photo' : '' }}</strong><p class="muted small">With hair and face routines and a care calendar.</p></div></li>
               </ul>
               <label class="check">
                 <input type="checkbox" [(ngModel)]="consent" />
-                <span><strong>Use my photo for this consultation.</strong><br /><span class="muted small">It is used only now and never saved. You can skip the photo.</span></span>
+                <span><strong>Use my photo for this consultation.</strong><br />
+                  @if (tryOn()) {
+                    <span class="muted small">Your face shape is measured on this phone. To show the three cuts on you, the photo is sent to OpenAI's image service. The three pictures stay with your results. You can skip the photo.</span>
+                  } @else {
+                    <span class="muted small">It is used only now and never saved. You can skip the photo.</span>
+                  }
+                </span>
               </label>
             </div>
           }
@@ -122,7 +128,7 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
               <chakra class="big" [steps]="steps()" [current]="idx()" [spinning]="running()" [finished]="finished()" [beads]="beads()" [hubText]="hub()" />
               @if (!running() && !finished()) {
                 <h2>All set{{ firstName() ? ', ' + firstName() : '' }}.</h2>
-                <p class="muted">Spin the chakra and seven AI agents get to work.</p>
+                <p class="muted">Spin the chakra and seven AI agents get to work.@if (tryOn() && consent && photo()) { Putting the three cuts on your photo takes about a minute.}</p>
                 <div class="chips summary">@for (c of summary(); track c) { <span class="pill">{{ c }}</span> }</div>
                 <button type="button" class="btn btn-brand spinbtn" (click)="submit()">Spin the chakra</button>
               } @else {
@@ -249,6 +255,7 @@ export class JourneyPage implements OnInit, OnDestroy {
 
   form = signal<IntakeForm | null>(null);
   agents = signal<{ id: string; title: string }[]>([]);
+  tryOn = signal(false);
   idx = signal(0);
   answers = signal<Record<string, any>>({});
   photo = signal<string | null>(null);
@@ -315,6 +322,7 @@ export class JourneyPage implements OnInit, OnDestroy {
     warmUp();
     const meta = await this.api.meta();
     this.form.set(meta.forms['intake'] ?? null);
+    this.tryOn.set(!!meta.features?.photo_tryon);
     this.agents.set(meta.workflows['consultation']?.steps.map(s => ({ id: s.id, title: s.title })) ?? []);
   }
   ngOnDestroy() { this.stopCamera(); clearTimeout(this.pollTimer); }

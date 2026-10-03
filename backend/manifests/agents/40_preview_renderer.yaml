@@ -1,8 +1,18 @@
 id: preview_renderer
 title: Style previews
-description: Draws a preview card for each recommended style. Swap in an image model through the image provider.
+description: Puts each of the three recommended cuts on the customer's own photo (image-editing model). Without a photo or an image provider, draws an illustrated card instead.
 kind: image
 inputs: [recommendation, analysis]
+prompt: |
+  Edit this photo of a real person so they have a new haircut: {{ option.name }}.
+  How a stylist would cut it: {{ option.how_to_ask }}
+  Length: {{ style.length }}. Catalog cutting notes: {{ style.how_to_ask }}
+  Change ONLY the hair on the head. Keep everything else exactly as it is: the
+  face and identity, skin tone, eyes, glasses, facial hair and beard, expression,
+  head angle, clothes, background, lighting and framing. Keep their natural hair
+  colour. The result must look like an untouched, photorealistic photo of the
+  same person after a real salon visit - natural hair texture and hairline, no
+  hat, no wig look, no illustration.
 output_schema:
   type: object
   properties:
@@ -12,6 +22,7 @@ output_schema:
         type: object
         properties:
           style_id: { type: string }
+          kind: { type: string, enum: [photo, drawing] }
           image: { type: string }
           caption: { type: string }
 ui: { view: previews, hidden: true, order: 25 }

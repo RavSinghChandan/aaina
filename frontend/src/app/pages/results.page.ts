@@ -40,8 +40,11 @@ import { TopBar } from '../shared/top-bar';
         <section class="looks" aria-label="Recommended haircuts">
           @for (o of options(); track o.style_id; let i = $index) {
             <article class="look card" [class.chosen]="chosen() === o.style_id">
-              <div class="pv">
-                @if (preview(o.style_id); as src) { <img [src]="src" [alt]="'Drawing of ' + o.name + ' in your face shape and colours'" loading="lazy" /> }
+              <div class="pv" [class.photo]="kind(o.style_id) === 'photo'">
+                @if (preview(o.style_id); as src) {
+                  <img [src]="src" [alt]="kind(o.style_id) === 'photo' ? 'You with a ' + o.name : 'Drawing of ' + o.name" loading="lazy" />
+                }
+                @if (kind(o.style_id) === 'photo') { <span class="onyou">On your photo</span> }
                 <span class="rank">{{ i === 0 ? 'Best match' : '#' + (i + 1) }}</span>
                 <span class="score" [attr.aria-label]="o.match_score + ' percent match'">{{ o.match_score }}%</span>
               </div>
@@ -97,6 +100,9 @@ import { TopBar } from '../shared/top-bar';
     .pv { position: relative; background: #0b1a05; aspect-ratio: 1 / 1; }
     @media (min-width: 900px) { .pv { aspect-ratio: 4 / 5; } }
     .pv img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
+    .pv.photo { aspect-ratio: 2 / 3; background: #111; }
+    .pv.photo img { object-position: center top; }
+    .onyou { position: absolute; left: 12px; bottom: 12px; background: rgba(0,0,0,.62); color: #fff; border-radius: 999px; padding: 4px 10px; font-weight: 700; font-size: .78rem; }
     .you { display: flex; gap: 14px; align-items: center; padding: 14px; }
     .you-ph { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; object-position: center 25%; flex: none; border: 3px solid var(--card); box-shadow: 0 0 0 2px var(--brand); }
     .you .eyebrow { margin: 0 0 6px; }
@@ -180,6 +186,10 @@ export class ResultsPage implements OnInit {
       const [c, meta] = await Promise.all([this.api.consultation(this.id()), this.api.meta()]);
       this.c.set(c); this.meta.set(meta);
     } catch { this.error.set('We could not find these looks. They may have been removed.'); }
+  }
+
+  kind(styleId: string): string {
+    return (this.c()?.outputs?.['previews']?.previews ?? []).find((p: any) => p.style_id === styleId)?.kind ?? 'drawing';
   }
 
   preview(styleId: string): string | null {

@@ -155,6 +155,6 @@ def render_previews(options: list[dict[str, Any]], styles_by_id: dict[str, dict[
     out = []
     for opt in options:
         style = styles_by_id.get(opt.get("style_id"), {})
-        out.append({"style_id": opt.get("style_id", ""), "image": _PROVIDER.render(opt, style, analysis),
+        out.append({"style_id": opt.get("style_id", ""), "kind": "drawing", "image": _PROVIDER.render(opt, style, analysis),
                     "caption": f"Your colours and face shape, illustrated: preview of {opt.get('name', 'this cut')} on a {analysis.get('face_shape', 'oval')} face"})
     return out

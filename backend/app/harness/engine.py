@@ -56,7 +56,7 @@ class RunResult:
 class Engine:
     def __init__(self, registry: Registry, providers: dict[str, Any]):
         self.registry = registry
-        self.providers = providers      # {"llm": DeepSeekProvider|ClaudeProvider|None, "offline": OfflineProvider}
+        self.providers = providers      # {"llm": DeepSeek|Claude|None, "offline": OfflineProvider, "image": OpenAIPhotoEdit|None}
 
     def choose_provider(self, agent: AgentSpec, tenant: TenantSpec) -> str:
         """'llm' when an AI provider can serve this agent, else 'offline'."""
@@ -131,6 +131,20 @@ class Engine:
         return result
 
     async def _execute(self, agent: AgentSpec, ctx: dict[str, Any], tenant: TenantSpec) -> tuple[Any, str]:
+        # image agents: edit the customer's own photo when an image provider and a consented photo exist
+        img = self.providers.get("image")
+        if agent.kind == "image" and img is not None and getattr(img, "available", False) \
+                and (ctx.get("images") or {}).get("photo") and tenant.provider != "offline":
+            try:
+                out = await img.run(agent, ctx)
+                problems = validate(out, agent.output_schema) if agent.output_schema else []
+                if problems:
+                    raise StepError("schema: " + "; ".join(problems[:3]))
+                return out, getattr(img, "name", "image")
+            except Exception as exc:
+                log.warning("agent %s: image provider failed (%s), using offline rule", agent.id, exc)
+                out = await self.providers["offline"].run(agent, ctx)
+                return out, "offline-fallback"
         provider_name = self.choose_provider(agent, tenant)
         if provider_name == "llm":
             llm = self.providers["llm"]

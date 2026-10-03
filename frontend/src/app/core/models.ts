@@ -7,7 +7,7 @@ export interface FormSection { id: string; title: string; fields: FormField[]; }
 export interface IntakeForm { id: string; title: string; sections: FormSection[]; }
 export interface UiEntry { id: string; title: string; view: string; order: number; hidden: boolean; description: string; }
 export interface WorkflowMeta { title: string; steps: { id: string; agent: string; title: string }[]; }
-export interface Meta { ui: UiEntry[]; forms: Record<string, IntakeForm>; workflows: Record<string, WorkflowMeta>; }
+export interface Meta { features?: { photo_tryon: boolean }; ui: UiEntry[]; forms: Record<string, IntakeForm>; workflows: Record<string, WorkflowMeta>; }
 export interface StepState { status: 'pending' | 'running' | 'done' | 'skipped' | 'failed'; source?: string | null; ms?: number; error?: string | null; }
 export interface StyleOption {
   style_id: string; name: string; match_score: number; why: string; suits: string[]; watch_out: string;

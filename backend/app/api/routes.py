@@ -131,7 +131,8 @@ def health(st=Depends(state)):
 
 @router.get("/meta")
 def meta(st=Depends(state)):
-    return {"ui": st.registry.ui_manifest(), "forms": st.registry.forms, "workflows": {
+    img = st.providers.get("image")
+    return {"features": {"photo_tryon": bool(img and img.available)}, "ui": st.registry.ui_manifest(), "forms": st.registry.forms, "workflows": {
         k: {"title": w.title, "steps": [{"id": s.id, "agent": s.agent, "title": st.registry.agents[s.agent].title} for s in w.steps]}
         for k, w in st.registry.workflows.items()}}
 
