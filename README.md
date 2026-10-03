@@ -47,7 +47,7 @@ offline rule automatically — a consultation never breaks in front of a custome
 1. **Database — Neon (free).** Create a project at neon.tech, copy the Postgres
    connection string. (Render's free disk is wiped on every deploy; don't use SQLite there.)
 2. **API — Render (free).** Push this repo to GitHub, then in Render:
-   *New → Blueprint →* select the repo and set **Blueprint Path** to `aaina/render.yaml`. Set:
+   *New → Blueprint →* select the `aaina` repo (it reads `render.yaml` at the root). Set:
    * `DATABASE_URL` = the Neon string
    * `ANTHROPIC_API_KEY` = your key (or leave empty to sell in offline mode first)
    * `ALLOWED_ORIGINS` = your Vercel URL, e.g. `https://aaina.vercel.app`

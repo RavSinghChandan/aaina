@@ -1,10 +1,10 @@
-# Render Blueprint: New > Blueprint > pick this repo. Free web service.
+# Render Blueprint: New > Blueprint > pick this repo (render.yaml at the root). Free web service.
 services:
   - type: web
     name: aaina-api
     runtime: docker
     plan: free
-    rootDir: aaina/backend
+    rootDir: backend
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health
     autoDeploy: true
