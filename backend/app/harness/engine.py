@@ -56,7 +56,7 @@ class RunResult:
 class Engine:
     def __init__(self, registry: Registry, providers: dict[str, Any]):
         self.registry = registry
-        self.providers = providers      # {"llm": DeepSeek|Claude|None, "offline": OfflineProvider, "image": OpenAIPhotoEdit|None}
+        self.providers = providers      # {"llm": DeepSeek|Claude|None, "offline": OfflineProvider, "image": photo editor | None}
 
     def choose_provider(self, agent: AgentSpec, tenant: TenantSpec) -> str:
         """'llm' when an AI provider can serve this agent, else 'offline'."""

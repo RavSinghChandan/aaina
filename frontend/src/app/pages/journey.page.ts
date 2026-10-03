@@ -57,7 +57,7 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
                 <input type="checkbox" [(ngModel)]="consent" />
                 <span><strong>Use my photo for this consultation.</strong><br />
                   @if (tryOn()) {
-                    <span class="muted small">Your face shape is measured on this phone. To show the three cuts on you, the photo is sent to OpenAI's image service. The three pictures stay with your results. You can skip the photo.</span>
+                    <span class="muted small">Your face shape is measured on this phone. To show the three cuts on you, the photo is edited by the salon's image service. The three pictures stay with your results. You can skip the photo.</span>
                   } @else {
                     <span class="muted small">It is used only now and never saved. You can skip the photo.</span>
                   }

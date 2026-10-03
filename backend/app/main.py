@@ -14,7 +14,6 @@ from .api.routes import router
 from .db.models import Base, Tenant, make_engine, make_session_factory
 from .harness import Engine, Registry
 from .providers import OfflineProvider, make_llm
-from .providers.photo_edit import make_image_provider
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
@@ -45,7 +44,7 @@ def create_app(database_url: str | None = None, llm: str | None = None) -> FastA
 
     app = FastAPI(title="Aaina API", version="1.0.0", lifespan=lifespan)
     app.state.registry = Registry()
-    app.state.providers = {"llm": make_llm(llm), "offline": OfflineProvider(), "image": make_image_provider() if llm != "offline" else None}
+    app.state.providers = {"llm": make_llm(llm), "offline": OfflineProvider(), "image": None}   # slot for a photo-editing provider; none configured
     app.state.engine = Engine(app.state.registry, app.state.providers)
     app.state.db_engine = make_engine(database_url)
     app.state.sessions = make_session_factory(app.state.db_engine)
