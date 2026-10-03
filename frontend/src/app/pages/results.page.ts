@@ -2,28 +2,33 @@ import { Component, OnInit, computed, inject, input, signal } from '@angular/cor
 import { RouterLink } from '@angular/router';
 import { Api } from '../core/api.service';
 import { Consultation, Meta, StyleOption } from '../core/models';
-import { SalonStore } from '../core/salon.store';
 import { OutputView } from '../shared/output-view';
-import { SalonBar } from '../shared/salon-bar';
+import { Chakra } from '../shared/chakra';
+import { journeySteps } from '../core/journey';
+import { TopBar } from '../shared/top-bar';
 
 @Component({
   selector: 'results-page',
-  imports: [RouterLink, SalonBar, OutputView],
+  imports: [RouterLink, TopBar, OutputView, Chakra],
   template: `
-    <salon-bar [slug]="slug()" [name]="store.salon()?.name" />
+    <top-bar [action]="{ label: 'Start again', link: '/start' }" />
     <main class="wrap page stack">
       @if (c(); as c) {
         <header class="spread">
-          <div>
-            <p class="eyebrow">{{ c.customer.name ? c.customer.name + "'s looks" : 'Your looks' }}</p>
-            <h2>{{ rec()?.summary || 'Three cuts chosen for you' }}</h2>
+          <div class="done-row">
+            <chakra class="done-wheel" [steps]="steps()" [current]="steps().length" [finished]="true" [hubText]="{ big: '✓', small: '' }" />
+            <div>
+            <p class="eyebrow">All {{ steps().length }} steps done</p>
+            <h2>{{ c.customer.name ? c.customer.name + ', here are your looks' : 'Your three looks' }}</h2>
+            </div>
           </div>
           <div class="row">
-            <a class="btn btn-ghost btn-sm" [routerLink]="['/t', slug(), 'c', id(), 'present']">Big screen</a>
+            <a class="btn btn-ghost btn-sm" [routerLink]="['/looks', id(), 'screen']">Big screen</a>
             <a class="btn btn-ghost btn-sm" [href]="whatsappLink()" target="_blank" rel="noopener">Send on WhatsApp</a>
           </div>
         </header>
 
+        @if (rec()?.summary; as sum) { <p class="lead">{{ sum }}</p> }
         <section class="looks" aria-label="Recommended haircuts">
           @for (o of options(); track o.style_id; let i = $index) {
             <article class="look card" [class.chosen]="chosen() === o.style_id">
@@ -65,13 +70,18 @@ import { SalonBar } from '../shared/salon-bar';
           </section>
         }
         <p class="muted small center">Grooming guidance, not medical advice. {{ aiNote() }}</p>
-        <div class="center"><a class="btn btn-ghost" [routerLink]="['/t', slug(), 'consult']">New consultation</a></div>
+        <div class="center"><a class="btn btn-ghost" routerLink="/start">Start a new consultation</a></div>
       } @else if (error()) {
         <div class="card center"><h2>Not found</h2><p class="muted">{{ error() }}</p></div>
       } @else { <div class="skeleton" style="height:420px"></div> }
     </main>
   `,
   styles: [`
+    .done-row { display: flex; gap: 14px; align-items: center; }
+    .done-wheel { width: 64px; flex: none; }
+    .done-row h2 { margin: 0; }
+    .done-row .eyebrow { margin: 0 0 2px; }
+    .lead { font-size: 1.05rem; color: var(--ink-2); max-width: 70ch; }
     .looks { display: grid; grid-auto-flow: column; grid-auto-columns: 86%; gap: 14px; align-items: start; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 12px; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
     .look { scroll-snap-align: center; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
     @media (min-width: 900px) { .looks { grid-auto-flow: row; grid-template-columns: repeat(3, 1fr); overflow: visible; margin: 0; padding: 4px 0; align-items: stretch; } }
@@ -95,9 +105,7 @@ import { SalonBar } from '../shared/salon-bar';
   `],
 })
 export class ResultsPage implements OnInit {
-  slug = input.required<string>();
   id = input.required<string>();
-  store = inject(SalonStore);
   private api = inject(Api);
 
   c = signal<Consultation | null>(null);
@@ -105,6 +113,10 @@ export class ResultsPage implements OnInit {
   error = signal<string | null>(null);
   choosing = signal(false);
   tab = signal<string>('');
+  steps = computed(() => {
+    const m = this.meta();
+    return journeySteps(m?.forms['intake'] ?? null);
+  });
 
   rec = computed(() => this.c()?.outputs?.['recommendation']);
   options = computed<StyleOption[]>(() => this.rec()?.options ?? []);
@@ -130,18 +142,17 @@ export class ResultsPage implements OnInit {
     const o = this.options(); const cal = this.c()?.outputs?.['calendar'];
     const pick = o.find(x => x.style_id === this.chosen()) ?? o[0];
     const next = cal?.events?.find((e: any) => e.kind === 'trim');
-    const text = `Your Aaina looks from ${this.store.salon()?.name ?? 'the salon'}:\n` +
+    const text = `My Aaina looks:\n` +
       o.map((x, i) => `${i + 1}. ${x.name} (${x.match_score}% match)`).join('\n') +
       (pick ? `\n\nChosen: ${pick.name}` : '') + (next ? `\nNext trim: ${next.date}` : '');
     return `https://wa.me/?text=${encodeURIComponent(text)}`;
   });
 
   async ngOnInit() {
-    this.store.load(this.slug());
     try {
-      const [c, meta] = await Promise.all([this.api.consultation(this.slug(), this.id()), this.api.meta()]);
+      const [c, meta] = await Promise.all([this.api.consultation(this.id()), this.api.meta()]);
       this.c.set(c); this.meta.set(meta);
-    } catch { this.error.set('This consultation does not exist or belongs to another salon.'); }
+    } catch { this.error.set('We could not find these looks. They may have been removed.'); }
   }
 
   preview(styleId: string): string | null {
@@ -150,7 +161,7 @@ export class ResultsPage implements OnInit {
 
   async choose(o: StyleOption) {
     this.choosing.set(true);
-    try { this.c.set(await this.api.choose(this.slug(), this.id(), o.style_id)); this.tab.set('calendar'); }
+    try { this.c.set(await this.api.choose(this.id(), o.style_id)); this.tab.set('calendar'); }
     finally { this.choosing.set(false); }
   }
 }

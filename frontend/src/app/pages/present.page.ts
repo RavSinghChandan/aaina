@@ -2,7 +2,6 @@ import { Component, HostListener, OnInit, computed, inject, input, signal } from
 import { RouterLink } from '@angular/router';
 import { Api } from '../core/api.service';
 import { Consultation, StyleOption } from '../core/models';
-import { SalonStore } from '../core/salon.store';
 
 @Component({
   selector: 'present-page',
@@ -10,10 +9,10 @@ import { SalonStore } from '../core/salon.store';
   template: `
     <div class="stage">
       <header class="bar">
-        <span class="salon">{{ store.salon()?.name }}</span>
+        <span class="salon">Aaina</span>
         <div class="row">
           <button class="btn btn-sm ghost" (click)="fullscreen()">Full screen</button>
-          <a class="btn btn-sm ghost" [routerLink]="['/t', slug(), 'c', id()]">Close</a>
+          <a class="btn btn-sm ghost" [routerLink]="['/looks', id()]">Close</a>
         </div>
       </header>
       <h1>{{ name() ? name() + ', which one feels like you?' : 'Which one feels like you?' }}</h1>
@@ -51,9 +50,7 @@ import { SalonStore } from '../core/salon.store';
   `],
 })
 export class PresentPage implements OnInit {
-  slug = input.required<string>();
   id = input.required<string>();
-  store = inject(SalonStore);
   private api = inject(Api);
   c = signal<Consultation | null>(null);
   focus = signal(0);
@@ -61,8 +58,7 @@ export class PresentPage implements OnInit {
   name = computed(() => this.c()?.customer?.name ?? null);
 
   async ngOnInit() {
-    this.store.load(this.slug());
-    this.c.set(await this.api.consultation(this.slug(), this.id()));
+    this.c.set(await this.api.consultation(this.id()));
     const chosen = this.options().findIndex(o => o.style_id === this.c()?.chosen_style_id);
     if (chosen >= 0) this.focus.set(chosen);
   }

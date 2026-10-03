@@ -192,3 +192,15 @@ def test_grounding_filter_blocks_wrong_audience():
     # "all" means no restriction: the same answer is accepted
     res2 = asyncio.run(eng.run("consultation", {"input": {"gender": "all", "self_report": {}}}, reg.tenants["demo"]))
     assert res2.steps["recommendation"].source == "fake"
+
+
+def test_photo_measurement_sets_face_shape():
+    """Face shape measured on the device is used unless the customer picked one themselves."""
+    reg = Registry()
+    eng = Engine(reg, {"llm": None, "offline": OfflineProvider()})
+    pm = {"face_shape": "oblong", "confidence": 0.82, "quality": "good", "notes": ["Face is 1.6x longer than wide"]}
+    res = asyncio.run(eng.run("consultation", {"input": {"gender": "men", "self_report": {}, "photo_measure": pm}}, reg.tenants["demo"]))
+    a = res.outputs["analysis"]
+    assert a["face_shape"] == "oblong" and a["face_shape_confidence"] == 0.82 and "measured from your photo" in a["features"][0]
+    res = asyncio.run(eng.run("consultation", {"input": {"gender": "men", "self_report": {"face_shape": "round"}, "photo_measure": pm}}, reg.tenants["demo"]))
+    assert res.outputs["analysis"]["face_shape"] == "round" and "from your answers" in res.outputs["analysis"]["features"][0]

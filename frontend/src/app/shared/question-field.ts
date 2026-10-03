@@ -42,7 +42,7 @@ import { FormField } from '../core/models';
       @if (f.hint) { <span class="hint">{{ f.hint }}</span> }
     </div>
   `,
-  styles: [`.tags { margin-bottom: 8px; } .tags:empty { display: none; }`],
+  styles: [`:host { display: block; } .tags { margin-bottom: 8px; } .tags:empty { display: none; }`],
 })
 export class QuestionField {
   field = input.required<FormField>();

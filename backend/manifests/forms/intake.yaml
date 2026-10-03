@@ -49,7 +49,7 @@ sections:
       - { id: likes, label: "Styles you love", type: tags, optional: true, placeholder: "e.g. layers, fade" }
       - { id: dislikes, label: "Never give me…", type: tags, optional: true, placeholder: "e.g. bangs, very short" }
   - id: hair
-    title: Your hair & skin
+    title: Your hair
     fields:
       - id: hair_length_now
         label: Hair length right now
@@ -61,7 +61,7 @@ sections:
         optional: true
         options: [{ value: straight, label: Straight }, { value: wavy, label: Wavy }, { value: curly, label: Curly }, { value: coily, label: Coily }]
       - id: self_report.face_shape
-        label: Face shape (if you know)
+        label: Face shape
         type: choice
         optional: true
         options: [{ value: oval, label: Oval }, { value: round, label: Round }, { value: square, label: Square }, { value: heart, label: Heart }, { value: oblong, label: Long }, { value: diamond, label: Diamond }]
@@ -70,6 +70,15 @@ sections:
         type: multi
         optional: true
         options: [{ value: dandruff, label: Dandruff }, { value: hair_fall, label: Hair fall }, { value: frizz, label: Frizz }, { value: oily_scalp, label: Oily scalp }, { value: dry_scalp, label: Dry scalp }, { value: split_ends, label: Split ends }, { value: greying, label: Greying }, { value: thinning, label: Thinning }, { value: color_treated, label: Coloured hair }]
+      - id: family_hair_history
+        label: In your family, is there…
+        type: choice
+        optional: true
+        hint: "Self-reported only. We never collect genetic data."
+        options: [{ value: none, label: Nothing notable }, { value: early_greying, label: Early greying }, { value: thinning, label: Thinning or hair fall }, { value: both, label: Both }, { value: unsure, label: Not sure }]
+  - id: skin
+    title: Your skin
+    fields:
       - id: self_report.skin_type
         label: Skin type
         type: choice
@@ -81,9 +90,3 @@ sections:
         optional: true
         options: [{ value: acne, label: Acne }, { value: tan, label: Tan }, { value: pigmentation, label: Dark spots }, { value: dullness, label: Dullness }, { value: dark_circles, label: Dark circles }]
       - { id: has_beard, label: "I have a beard", type: toggle, optional: true }
-      - id: family_hair_history
-        label: In your family, is there…
-        type: choice
-        optional: true
-        hint: "Self-reported only. We never collect genetic data."
-        options: [{ value: none, label: Nothing notable }, { value: early_greying, label: Early greying }, { value: thinning, label: Thinning or hair fall }, { value: both, label: Both }, { value: unsure, label: Not sure }]

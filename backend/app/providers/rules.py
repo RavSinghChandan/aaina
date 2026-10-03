@@ -62,22 +62,28 @@ def profession_fit(text: str | None) -> str:
 @rule("face_analyst")
 def face_analyst(ctx: dict[str, Any]) -> dict[str, Any]:
     sr, inp = _self(ctx), _input(ctx)
-    face = sr.get("face_shape") if sr.get("face_shape") in {"oval", "round", "square", "heart", "oblong", "diamond", "triangle"} else "oval"
+    shapes = {"oval", "round", "square", "heart", "oblong", "diamond", "triangle"}
+    pm = inp.get("photo_measure") if isinstance(inp.get("photo_measure"), dict) else {}
+    measured = pm.get("face_shape") if pm.get("face_shape") in shapes else None
+    face = sr.get("face_shape") if sr.get("face_shape") in shapes else (measured or "oval")
+    from_photo = measured is not None and face == measured
     hair_type = sr.get("hair_type") if sr.get("hair_type") in {"straight", "wavy", "curly", "coily"} else "straight"
     density = sr.get("hair_density") if sr.get("hair_density") in {"fine", "medium", "thick"} else "medium"
     length = inp.get("hair_length_now") if inp.get("hair_length_now") in {"short", "medium", "long"} else "medium"
     skin = sr.get("skin_type") if sr.get("skin_type") in {"oily", "dry", "combination", "normal", "sensitive"} else "unknown"
     return {
         "face_shape": face,
-        "face_shape_confidence": 0.6 if sr.get("face_shape") else 0.4,
-        "features": [f"{face.capitalize()} face shape (from your answers)"],
+        "face_shape_confidence": round(float(pm.get("confidence") or 0.7), 2) if from_photo else (0.6 if sr.get("face_shape") else 0.4),
+        "features": [f"{face.capitalize()} face shape ({'measured from your photo' if from_photo else 'from your answers'})"]
+                    + [str(x) for x in (pm.get("notes") or [])[:3] if from_photo],
         "hair": {"type": hair_type, "density": density, "length": length,
                  "texture_notes": f"{density.capitalize()}, {hair_type} hair",
                  "visible_concerns": list(sr.get("hair_concerns") or [])},
         "skin": {"type": skin, "visible_concerns": list(sr.get("skin_concerns") or [])},
         "beard": {"present": bool(inp.get("has_beard")), "notes": "Beard care included" if inp.get("has_beard") else ""},
-        "photo_quality": "ok",
-        "notes": "Offline analysis based on your answers. Connect AI for photo analysis.",
+        "photo_quality": pm.get("quality") if pm.get("quality") in {"good", "ok", "poor"} else "ok",
+        "notes": ("Face shape measured on your device from 478 face points; hair and skin from your answers."
+                  if from_photo else "Based on your answers."),
     }
 
 

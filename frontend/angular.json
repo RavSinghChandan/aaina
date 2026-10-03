@@ -49,6 +49,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "vision_wasm_internal.*",
+                "input": "node_modules/@mediapipe/tasks-vision/wasm",
+                "output": "mediapipe"
               }
             ],
             "styles": [

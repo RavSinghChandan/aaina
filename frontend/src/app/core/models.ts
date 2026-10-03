@@ -1,9 +1,3 @@
-export interface Branding { primary: string; accent: string; logo_url?: string | null; tagline: string; }
-export interface TenantPublic {
-  slug: string; name: string; plan: string; branding: Branding; ai: boolean; vision: boolean;
-  settings: { store_photos: boolean; audience: string[]; city?: string | null };
-  usage: { this_month: number; limit: number };
-}
 export interface FormOption { value: string; label: string; }
 export interface FormField {
   id: string; label: string; type: 'text' | 'choice' | 'multi' | 'tags' | 'toggle';
@@ -24,5 +18,3 @@ export interface Consultation {
   steps: Record<string, StepState>; outputs: Record<string, any>; chosen_style_id: string | null;
   error: string | null; created_at: string; customer: { id: string; name: string | null }; photo: string | null;
 }
-export interface CustomerRow { id: string; name: string | null; phone: string | null; visits: number; last_visit: string | null; chosen_style_id: string | null; }
-export interface AgendaItem { date: string; title: string; kind: string; detail: string; customer: { id: string; name: string | null; phone: string | null }; }
