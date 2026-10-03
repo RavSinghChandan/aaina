@@ -121,8 +121,10 @@ export class ResultsPage implements OnInit {
   });
   currentTab = computed(() => this.tabs().find(t => t.step === this.tab()) ?? this.tabs()[0]);
   aiNote = computed(() => {
-    const src = this.c()?.steps?.['analysis']?.source;
-    return src === 'claude' ? 'Photo analysed by AI.' : 'Based on your answers.';
+    const steps = this.c()?.steps ?? {};
+    const ai = ['recommendation', 'hair_care'].some(k => !['offline', 'offline-fallback', undefined].includes(steps[k]?.source as any));
+    const photo = steps['analysis']?.source && !['offline', 'offline-fallback'].includes(steps['analysis'].source!);
+    return photo ? 'Photo and recommendations by AI.' : ai ? 'Recommendations by AI, based on your answers.' : 'Based on your answers.';
   });
   whatsappLink = computed(() => {
     const o = this.options(); const cal = this.c()?.outputs?.['calendar'];

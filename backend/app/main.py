@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -12,12 +13,29 @@ from sqlalchemy import select
 from .api.routes import router
 from .db.models import Base, Tenant, make_engine, make_session_factory
 from .harness import Engine, Registry
-from .providers import ClaudeProvider, OfflineProvider
+from .providers import OfflineProvider, make_llm
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
 
-def create_app(database_url: str | None = None, claude_key: str | None = None) -> FastAPI:
+def load_env_file(path: Path = Path(__file__).resolve().parents[1] / ".env") -> None:
+    """Read backend/.env for local runs. Real environment variables always win,
+    so Render's settings stay authoritative in production."""
+    if not path.exists():
+        return
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        value = value.split(" #", 1)[0].strip().strip('"').strip("'")
+        os.environ.setdefault(key.strip(), value)
+
+
+load_env_file()
+
+
+def create_app(database_url: str | None = None, llm: str | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         Base.metadata.create_all(app.state.db_engine)
@@ -26,8 +44,7 @@ def create_app(database_url: str | None = None, claude_key: str | None = None) -
 
     app = FastAPI(title="Aaina API", version="1.0.0", lifespan=lifespan)
     app.state.registry = Registry()
-    claude = ClaudeProvider(api_key=claude_key) if os.getenv("AAINA_PROVIDER", "auto") != "offline" else ClaudeProvider(api_key="")
-    app.state.providers = {"claude": claude, "offline": OfflineProvider()}
+    app.state.providers = {"llm": make_llm(llm), "offline": OfflineProvider()}
     app.state.engine = Engine(app.state.registry, app.state.providers)
     app.state.db_engine = make_engine(database_url)
     app.state.sessions = make_session_factory(app.state.db_engine)

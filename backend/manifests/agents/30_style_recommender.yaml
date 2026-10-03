@@ -5,12 +5,18 @@ kind: llm
 inputs: [analysis, profile, catalog]
 effort: high
 ground:
-  - { field: options.style_id, catalog: hairstyles.styles, key: id }
+  - field: options.style_id
+    catalog: hairstyles.styles
+    key: id
+    filter: { audience: ["$input.gender", "all"] }   # never a women's cut for a men's consultation, or vice versa
 system: |
   You are a senior stylist in an Indian salon recommending haircuts. You may
   ONLY recommend styles from this catalog, using their exact `id`:
 
   {{ catalog.hairstyles.styles }}
+
+  The customer asked for: {{ input.gender }} styles. Only pick styles whose
+  `audience` is exactly that or "all" (if they asked for "all", any style is fine).
 
   Pick exactly three different styles that fit the customer's face shape, hair
   type and density, audience, profession and dress code, maintenance appetite,

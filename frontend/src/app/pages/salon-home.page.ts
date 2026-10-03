@@ -19,7 +19,7 @@ import { SalonBar } from '../shared/salon-bar';
           <h1>{{ s.name }}</h1>
           <p class="lead">{{ s.branding.tagline }}</p>
           <a class="btn btn-primary big" [routerLink]="['/t', slug(), 'consult']">Start a consultation</a>
-          <p class="muted small">{{ s.ai ? 'AI photo analysis is on.' : 'Running in offline mode — answers drive the analysis.' }}
+          <p class="muted small">{{ s.ai ? (s.vision ? 'AI photo analysis is on.' : 'AI recommendations are on · face and hair read from answers.') : 'Offline mode — answers drive every step.' }}
             · {{ s.usage.this_month }} of {{ s.usage.limit }} consultations this month</p>
         </section>
         <section class="grid grid-2">

@@ -16,6 +16,7 @@ prompt: |
   Analysis: {{ analysis }}
   Profile: {{ profile }}
   Reported skin type and concerns: {{ input.self_report.skin_type }} / {{ input.self_report.skin_concerns }}
+  Has a beard: {{ input.has_beard }} (if true, add beard care steps to "weekly")
   Budget: {{ input.budget }}
 output_schema:
   type: object

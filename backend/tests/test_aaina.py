@@ -27,8 +27,7 @@ ANSWERS = {
 @pytest.fixture()
 def client(tmp_path, monkeypatch):
     monkeypatch.delenv("ADMIN_KEY", raising=False)
-    monkeypatch.setenv("AAINA_PROVIDER", "offline")
-    app = create_app(database_url=f"sqlite:///{tmp_path}/t.db", claude_key="")
+    app = create_app(database_url=f"sqlite:///{tmp_path}/t.db", llm="offline")
     with TestClient(app) as c:
         yield c
 
@@ -141,14 +140,16 @@ def test_new_feature_with_yaml_only(tmp_path):
     (mdir / "workflows" / "consultation.yaml").write_text(yaml.safe_dump(wf))
 
     reg = Registry(mdir, CATALOG_DIR)
-    eng = Engine(reg, {"claude": None, "offline": OfflineProvider()})
+    eng = Engine(reg, {"llm": None, "offline": OfflineProvider()})
     res = asyncio.run(eng.run("consultation", {"input": {"gender": "men", "self_report": {}}}, reg.tenants["demo"]))
     assert res.ok and "tip" in res.outputs
     assert any(u["id"] == "quick_tip" for u in reg.ui_manifest())
 
 
 class FakeClaude:
+    name = "fake"
     available = True
+    vision = True
 
     def __init__(self, output):
         self.output = output
@@ -164,7 +165,7 @@ def test_grounding_rejects_invented_style_and_falls_back():
     invented = {"summary": "x", "options": [
         {"style_id": "unicorn-cut", "name": "Unicorn", "match_score": 99, "why": "", "suits": [], "watch_out": "",
          "maintenance": "low", "trim_weeks": 4, "styling_minutes": 1, "how_to_ask": "", "styling_tip": ""}] * 3}
-    eng = Engine(reg, {"claude": FakeClaude(invented), "offline": OfflineProvider()})
+    eng = Engine(reg, {"llm": FakeClaude(invented), "offline": OfflineProvider()})
     res = asyncio.run(eng.run("consultation", {"input": {"gender": "men", "self_report": {}}}, reg.tenants["demo"]))
     assert res.steps["recommendation"].source == "offline-fallback"
     assert all(o["style_id"] != "unicorn-cut" for o in res.outputs["recommendation"]["options"])
@@ -175,3 +176,19 @@ def test_grounding_rejects_invented_style_and_falls_back():
 def test_workflow_cycle_is_rejected():
     with pytest.raises(ValueError, match="cycle"):
         WorkflowSpec(id="bad", steps=[{"id": "a", "agent": "x", "needs": ["b"]}, {"id": "b", "agent": "x", "needs": ["a"]}])
+
+
+def test_grounding_filter_blocks_wrong_audience():
+    """A real catalog style for the wrong audience is rejected, then the rules take over."""
+    reg = Registry()
+    wrong = {"summary": "x", "options": [
+        {"style_id": sid, "name": sid, "match_score": 90, "why": "", "suits": [], "watch_out": "", "maintenance": "low",
+         "trim_weeks": 4, "styling_minutes": 1, "how_to_ask": "", "styling_tip": ""} for sid in ("classic-side-part", "long-layers", "u-cut")]}
+    eng = Engine(reg, {"llm": FakeClaude(wrong), "offline": OfflineProvider()})
+    res = asyncio.run(eng.run("consultation", {"input": {"gender": "women", "self_report": {}}}, reg.tenants["demo"]))
+    assert res.steps["recommendation"].source == "offline-fallback"           # side part is a men's cut
+    styles = {s["id"]: s for s in reg.catalog["hairstyles"]["styles"]}
+    assert all(styles[o["style_id"]]["audience"] in ("women", "all") for o in res.outputs["recommendation"]["options"])
+    # "all" means no restriction: the same answer is accepted
+    res2 = asyncio.run(eng.run("consultation", {"input": {"gender": "all", "self_report": {}}}, reg.tenants["demo"]))
+    assert res2.steps["recommendation"].source == "fake"

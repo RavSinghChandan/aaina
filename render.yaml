@@ -9,13 +9,13 @@ services:
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
-      - key: ANTHROPIC_API_KEY
-        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false            # your DeepSeek key
+      - key: AAINA_LLM
+        value: deepseek
       - key: DATABASE_URL
         sync: false            # paste your Neon / Supabase Postgres URL
       - key: ALLOWED_ORIGINS
         value: https://aaina.vercel.app
       - key: ADMIN_KEY
         generateValue: true
-      - key: AAINA_PROVIDER
-        value: auto

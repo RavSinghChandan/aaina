@@ -32,6 +32,10 @@ class GroundSpec(BaseModel):
     field: str                   # dotted path; lists are walked, e.g. options.style_id
     catalog: str                 # dotted path into the catalog, e.g. hairstyles.styles
     key: str = "id"
+    # Optional: the chosen catalog row must also match these fields. Each allowed
+    # value is a literal, or "$path" read from the workflow context. A resolved
+    # value of "all" means "no restriction".
+    filter: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class AgentSpec(BaseModel):
@@ -116,7 +120,7 @@ class TenantSpec(BaseModel):
     slug: str
     name: str
     plan: Literal["trial", "starter", "pro"] = "trial"
-    provider: Literal["auto", "claude", "offline"] = "auto"
+    provider: Literal["auto", "offline"] = "auto"   # "offline" forces rules for this salon
     workflows: list[str] = Field(default_factory=lambda: ["consultation", "choose_style"])
     branding: Branding = Field(default_factory=Branding)
     settings: TenantSettings = Field(default_factory=TenantSettings)

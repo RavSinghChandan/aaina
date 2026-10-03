@@ -124,7 +124,9 @@ class ChooseIn(BaseModel):
 # ------------------------------------------------------------------ meta
 @router.get("/health")
 def health(st=Depends(state)):
-    return {"status": "ok", "ai": bool(st.providers["claude"].available), "agents": len(st.registry.agents)}
+    llm = st.providers["llm"]
+    return {"status": "ok", "ai": bool(llm and llm.available), "provider": getattr(llm, "name", "offline"),
+            "vision": bool(llm and getattr(llm, "vision", False)), "agents": len(st.registry.agents)}
 
 
 @router.get("/meta")
@@ -163,7 +165,8 @@ def tenant_public(t: Tenant = Depends(get_tenant), st=Depends(state)):
     return {"slug": spec.slug, "name": spec.name, "plan": spec.plan, "branding": spec.branding.model_dump(),
             "settings": {"store_photos": spec.settings.store_photos, "audience": spec.settings.audience, "city": spec.settings.city},
             "usage": {"this_month": used, "limit": PLAN_LIMITS.get(spec.plan, 50)},
-            "ai": bool(st.providers["claude"].available) and spec.provider != "offline"}
+            "ai": bool(st.providers["llm"] and st.providers["llm"].available) and spec.provider != "offline",
+            "vision": bool(st.providers["llm"] and getattr(st.providers["llm"], "vision", False)) and spec.provider != "offline"}
 
 
 # ------------------------------------------------------------------ consultations

@@ -29,7 +29,7 @@ class StepError(RuntimeError):
 @dataclass
 class StepResult:
     status: str = "pending"          # pending | running | done | skipped | failed
-    source: str | None = None        # claude | offline | offline-fallback | image
+    source: str | None = None        # deepseek | claude | offline | offline-fallback | image
     ms: int = 0
     error: str | None = None
 
@@ -56,17 +56,18 @@ class RunResult:
 class Engine:
     def __init__(self, registry: Registry, providers: dict[str, Any]):
         self.registry = registry
-        self.providers = providers      # {"claude": ClaudeProvider|None, "offline": OfflineProvider}
+        self.providers = providers      # {"llm": DeepSeekProvider|ClaudeProvider|None, "offline": OfflineProvider}
 
     def choose_provider(self, agent: AgentSpec, tenant: TenantSpec) -> str:
-        if agent.kind != "llm":
+        """'llm' when an AI provider can serve this agent, else 'offline'."""
+        if agent.kind != "llm" or tenant.provider == "offline":
             return "offline"
-        if tenant.provider == "offline":
+        llm = self.providers.get("llm")
+        if llm is None or not llm.available:
             return "offline"
-        claude = self.providers.get("claude")
-        if claude is not None and claude.available:
-            return "claude"
-        return "offline"
+        if agent.needs_image and not getattr(llm, "vision", False):
+            return "offline"          # never let a text-only model guess what it cannot see
+        return "llm"
 
     async def run(
         self,
@@ -131,23 +132,24 @@ class Engine:
 
     async def _execute(self, agent: AgentSpec, ctx: dict[str, Any], tenant: TenantSpec) -> tuple[Any, str]:
         provider_name = self.choose_provider(agent, tenant)
-        if provider_name == "claude":
+        if provider_name == "llm":
+            llm = self.providers["llm"]
             try:
-                out = await self.providers["claude"].run(agent, ctx)
+                out = await llm.run(agent, ctx)
                 problems = validate(out, agent.output_schema) if agent.output_schema else []
-                problems += check_grounding(out, agent.ground, self.registry.catalog)
+                problems += check_grounding(out, agent.ground, self.registry.catalog, ctx)
                 if problems:
                     raise StepError("schema: " + "; ".join(problems[:3]))
-                return out, "claude"
+                return out, getattr(llm, "name", "llm")
             except Exception as exc:
                 if not agent.offline:
                     raise
-                log.warning("agent %s: claude failed (%s), using offline rule", agent.id, exc)
+                log.warning("agent %s: %s failed (%s), using offline rule", agent.id, getattr(llm, "name", "llm"), exc)
                 out = await self.providers["offline"].run(agent, ctx)
                 return out, "offline-fallback"
         out = await self.providers["offline"].run(agent, ctx)
         if agent.output_schema:
-            problems = validate(out, agent.output_schema) + check_grounding(out, agent.ground, self.registry.catalog)
+            problems = validate(out, agent.output_schema) + check_grounding(out, agent.ground, self.registry.catalog, ctx)
             if problems:
                 raise StepError(f"offline rule {agent.offline.rule if agent.offline else '?'} broke schema: {problems[:3]}")
         return out, ("image" if agent.kind == "image" else "offline")

@@ -25,6 +25,9 @@ class ClaudeRefusal(RuntimeError):
 
 
 class ClaudeProvider:
+    name = "claude"
+    vision = True
+
     def __init__(self, model: str | None = None, api_key: str | None = None, http_client: Any = None):
         self.model = model or os.getenv("AAINA_MODEL", DEFAULT_MODEL)
         key = api_key if api_key is not None else os.getenv("ANTHROPIC_API_KEY")

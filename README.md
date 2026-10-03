@@ -16,7 +16,7 @@ calendar that brings them back on time. Multi-tenant: every salon gets its own l
 # API  (http://localhost:8000)
 cd backend
 python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
-cp .env.example .env              # add ANTHROPIC_API_KEY for photo analysis; leave empty for offline mode
+cp .env.example .env              # add DEEPSEEK_API_KEY for AI recommendations; leave empty for offline mode
 .venv/bin/uvicorn app.main:app --reload --port 8000
 
 # App  (http://localhost:4200)
@@ -28,14 +28,16 @@ Open `http://localhost:4200/t/demo` — a demo salon is created automatically.
 
 Tests: `cd backend && .venv/bin/python -m pytest` (14 tests, no API key needed).
 
-### Offline mode vs AI mode
+### Offline, DeepSeek, or Claude (`AAINA_LLM`)
 
-| | Offline (no key) | AI (`ANTHROPIC_API_KEY` set) |
-|---|---|---|
-| Face & hair analysis | From the customer's answers | From the photo (Claude vision) |
-| Recommendations | Scoring rules over the catalog | Claude, grounded in the same catalog |
-| Routines | Rules over the routine catalog | Claude, personalised |
-| Previews, calendar | Same | Same |
+| | Offline (no key) | DeepSeek (default) | Claude (optional) |
+|---|---|---|---|
+| Face & hair analysis | From answers | From answers (DeepSeek is text-only) | From the photo |
+| Recommendations | Scoring rules over the catalog | AI, grounded in the same catalog | AI, grounded in the catalog |
+| Profile & routines | Rules | AI, personalised | AI, personalised |
+| Previews, calendar | Same | Same | Same |
+
+A live DeepSeek consultation takes about 11 seconds and costs a fraction of a rupee.
 
 If the AI fails or answers outside the schema or catalog, that step falls back to the
 offline rule automatically — a consultation never breaks in front of a customer.
@@ -49,7 +51,7 @@ offline rule automatically — a consultation never breaks in front of a custome
 2. **API — Render (free).** Push this repo to GitHub, then in Render:
    *New → Blueprint →* select the `aaina` repo (it reads `render.yaml` at the root). Set:
    * `DATABASE_URL` = the Neon string
-   * `ANTHROPIC_API_KEY` = your key (or leave empty to sell in offline mode first)
+   * `DEEPSEEK_API_KEY` = your DeepSeek key (leave empty to run fully offline)
    * `ALLOWED_ORIGINS` = your Vercel URL, e.g. `https://aaina.vercel.app`
    * `ADMIN_KEY` is generated — keep it; you need it to create salons.
    Check `https://<your-service>.onrender.com/api/health`.

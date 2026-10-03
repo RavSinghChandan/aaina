@@ -79,13 +79,34 @@ def _collect(node: Any, parts: list[str]) -> list[Any]:
     return []
 
 
-def check_grounding(output: Any, grounds: list[Any], catalog: dict[str, Any]) -> list[str]:
-    """Every value at `field` must exist as `key` in the named catalog list."""
+def check_grounding(output: Any, grounds: list[Any], catalog: dict[str, Any], ctx: dict[str, Any] | None = None) -> list[str]:
+    """Every value at `field` must exist as `key` in the catalog, and pass the ground's filter."""
     problems: list[str] = []
+    ctx = ctx or {}
     for g in grounds:
-        allowed_rows = _collect(catalog, g.catalog.split("."))
-        allowed = {row.get(g.key) for row in allowed_rows if isinstance(row, dict)}
+        rows = {row.get(g.key): row for row in _collect(catalog, g.catalog.split(".")) if isinstance(row, dict)}
+        filters = {f: _resolve_allowed(vals, ctx) for f, vals in (getattr(g, "filter", None) or {}).items()}
         for value in _collect(output, g.field.split(".")):
-            if value not in allowed:
+            row = rows.get(value)
+            if row is None:
                 problems.append(f"{g.field}={value!r} is not in catalog {g.catalog}")
+                continue
+            for fname, allowed in filters.items():
+                if allowed is not None and row.get(fname) not in allowed:
+                    problems.append(f"{g.field}={value!r} has {fname}={row.get(fname)!r}, allowed {sorted(allowed)}")
     return problems
+
+
+def _resolve_allowed(values: list[str], ctx: dict[str, Any]) -> set[Any] | None:
+    out: set[Any] = set()
+    for v in values:
+        if isinstance(v, str) and v.startswith("$"):
+            node: Any = ctx
+            for part in v[1:].split("."):
+                node = node.get(part) if isinstance(node, dict) else None
+            if node in (None, "", "all"):
+                return None          # customer gave no restriction
+            out.add(node)
+        else:
+            out.add(v)
+    return out
