@@ -16,6 +16,11 @@ export interface FaceMeasure {
   lines: { id: 'length' | 'forehead' | 'cheek' | 'jaw'; a: Point; b: Point }[];
   width: number;
   height: number;
+  /** From the hair model: current colour and length. Null if it could not run. */
+  hair: { rgb: [number, number, number]; color: string; length: 'short' | 'medium' | 'long' } | null;
+  beard: boolean;
+  /** Skin tone from bare cheek skin, so the preview drawing looks like the customer. */
+  skin: [number, number, number];
 }
 
 // MediaPipe face-mesh landmark indices
@@ -24,6 +29,9 @@ const FOREHEAD: [number, number] = [54, 284];
 const CHEEK: [number, number] = [234, 454];
 const JAW: [number, number] = [172, 397];
 const EYES: [number, number] = [33, 263];
+const CHIN_PATCH = [152, 175, 199, 200, 148, 377, 176, 400];   // where a beard grows
+const CHEEK_PATCH = [50, 280, 123, 352, 116, 345];              // bare cheek skin below the cheekbones
+const SKIN_PATCH = [151, 9, 108, 337, 69, 299, 50, 280, 123, 352]; // forehead and cheekbones, clear of glasses lenses
 
 let landmarker: Promise<any> | null = null;
 
@@ -49,8 +57,20 @@ function load() {
   })().catch(e => { landmarker = null; throw e; }));
 }
 
-/** Start downloading the model early so measuring feels instant. */
-export function warmUp() { load().catch(() => {}); }
+let segmenter: Promise<any> | null = null;
+function loadHair() {
+  return (segmenter ??= (async () => {
+    const { ImageSegmenter, FilesetResolver } = await import('@mediapipe/tasks-vision');
+    const files = await FilesetResolver.forVisionTasks('/mediapipe');
+    return ImageSegmenter.createFromOptions(files, {
+      baseOptions: { modelAssetPath: '/models/hair_segmenter.tflite' },
+      runningMode: 'IMAGE', outputCategoryMask: true, outputConfidenceMasks: false,
+    });
+  })().catch(e => { segmenter = null; throw e; }));
+}
+
+/** Start downloading the models early so measuring feels instant. */
+export function warmUp() { load().catch(() => {}); loadHair().catch(() => {}); }
 
 export async function measureFace(dataUrl: string): Promise<FaceMeasure | { error: string }> {
   let lm: any;
@@ -60,7 +80,7 @@ export async function measureFace(dataUrl: string): Promise<FaceMeasure | { erro
   await img.decode();
   const res = lm.detect(img);
   const faces: { x: number; y: number }[][] = res.faceLandmarks ?? [];
-  if (!faces.length) return { error: 'We could not find a face. Face the camera in good light and try again.' };
+  if (!faces.length) return { error: 'We could not find a clear face. Use a close-up of just you, facing the camera, in good light.' };
   if (faces.length > 1) return { error: 'We found more than one face. Please use a photo with just you.' };
 
   const W = img.naturalWidth, H = img.naturalHeight;
@@ -90,6 +110,14 @@ export async function measureFace(dataUrl: string): Promise<FaceMeasure | { erro
   if (FC >= 0.93) notes.push('Forehead about as wide as cheekbones');
   const confidence = Math.max(0.5, Math.min(0.92, 0.62 + margin * 2.2 - (quality === 'poor' ? 0.15 : quality === 'ok' ? 0.05 : 0)));
 
+  const px = pixels(img);
+  const lum = (ids: number[]) => avg(ids.map(i => p(i)), px).reduce((a, v, k) => a + v * [0.299, 0.587, 0.114][k], 0);
+  const beard = lum(CHIN_PATCH) < lum(CHEEK_PATCH) * 0.62;
+  const skin = median(SKIN_PATCH.map(i => avg([p(i)], px)));
+  const hair = await hairStats(img, px, { eyeY: Math.min(eyes[0].y, eyes[1].y), chin, length, cheekL: Math.min(ck[0].x, ck[1].x), cheekR: Math.max(ck[0].x, ck[1].x) });
+  if (beard) notes.push('Beard');
+  if (hair) notes.push(`${hair.color} hair`);
+
   return {
     face_shape: shape, confidence: Math.round(confidence * 100) / 100, quality, notes,
     ratios: { length_to_cheek: +L.toFixed(3), jaw_to_cheek: +J.toFixed(3), forehead_to_jaw: +F.toFixed(3) },
@@ -100,7 +128,74 @@ export async function measureFace(dataUrl: string): Promise<FaceMeasure | { erro
       { id: 'jaw', a: jw[0], b: jw[1] },
     ],
     width: W, height: H,
+    hair, beard, skin,
   };
+}
+
+type Px = { data: Uint8ClampedArray; w: number; h: number };
+function pixels(img: HTMLImageElement): Px {
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth; c.height = img.naturalHeight;
+  const ctx = c.getContext('2d', { willReadFrequently: true })!;
+  ctx.drawImage(img, 0, 0);
+  return { data: ctx.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height };
+}
+/** Per-channel median, so a stray shadow, lens or strand of hair does not skew the colour. */
+function median(cs: [number, number, number][]): [number, number, number] {
+  const m = (k: number) => { const v = cs.map(c => c[k]).sort((a, b) => a - b); return Math.round(v[Math.floor(v.length / 2)]); };
+  return [m(0), m(1), m(2)];
+}
+/** Mean colour in a 7x7 patch around each point. */
+function avg(pts: Point[], px: Px): [number, number, number] {
+  const s = [0, 0, 0]; let n = 0;
+  for (const q of pts) for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+    const x = Math.round(q.x) + dx, y = Math.round(q.y) + dy;
+    if (x < 0 || y < 0 || x >= px.w || y >= px.h) continue;
+    const i = (y * px.w + x) * 4; s[0] += px.data[i]; s[1] += px.data[i + 1]; s[2] += px.data[i + 2]; n++;
+  }
+  return n ? [s[0] / n, s[1] / n, s[2] / n] : [0, 0, 0];
+}
+async function hairStats(img: HTMLImageElement, px: Px, f: { eyeY: number; chin: Point; length: number; cheekL: number; cheekR: number }): Promise<FaceMeasure['hair']> {
+  let seg: any;
+  try { seg = await loadHair(); } catch { return null; }
+  let mask: Uint8Array | null = null, mw = 0, mh = 0;
+  seg.segment(img, (r: any) => {
+    const m = r.categoryMask;
+    if (m) { mask = m.getAsUint8Array().slice(); mw = m.width; mh = m.height; }
+    r.close?.();
+  });
+  if (!mask) return null;
+  const mk: Uint8Array = mask;
+  const sx = px.w / mw, sy = px.h / mh;
+  // colour: hair pixels above the eyes (so a beard does not count)
+  const s = [0, 0, 0]; let n = 0, lowest = 0;
+  for (let y = 0; y < mh; y++) for (let x = 0; x < mw; x++) {
+    if (!mk[y * mw + x]) continue;
+    const X = x * sx, Y = y * sy;
+    if (Y < f.eyeY) {
+      const i = (Math.round(Y) * px.w + Math.round(X)) * 4;
+      s[0] += px.data[i]; s[1] += px.data[i + 1]; s[2] += px.data[i + 2]; n++;
+    }
+    // length: how far hair falls beside the face (outside the cheeks, so a beard does not count)
+    const margin = (f.cheekR - f.cheekL) * 0.08;
+    if ((X < f.cheekL - margin || X > f.cheekR + margin) && Y > lowest) lowest = Y;
+  }
+  if (n < 50) return null;
+  const rgb: [number, number, number] = [Math.round(s[0] / n), Math.round(s[1] / n), Math.round(s[2] / n)];
+  const below = (lowest - f.chin.y) / f.length;
+  const length = below > 0.35 ? 'long' : below > -0.15 ? 'medium' : 'short';
+  return { rgb, color: colorName(rgb), length };
+}
+
+export function colorName([r, g, b]: [number, number, number]): string {
+  const l = 0.299 * r + 0.587 * g + 0.114 * b, mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0;
+  if (l < 42) return 'Black';
+  if (sat < 0.12 && l > 120) return 'Grey';
+  if (r > g * 1.35 && r > 110) return 'Auburn';
+  if (l < 75) return 'Dark brown';
+  if (l < 120) return 'Brown';
+  if (l < 165) return 'Light brown';
+  return 'Blonde';
 }
 
 /** Rule of thumb stylists use, written as thresholds. `margin` = distance from the nearest boundary. */

@@ -55,7 +55,7 @@ export class PresentPage implements OnInit {
   c = signal<Consultation | null>(null);
   focus = signal(0);
   options = computed<StyleOption[]>(() => this.c()?.outputs?.['recommendation']?.options ?? []);
-  name = computed(() => this.c()?.customer?.name ?? null);
+  name = computed(() => this.c()?.customer?.name?.trim() || null);
 
   async ngOnInit() {
     this.c.set(await this.api.consultation(this.id()));

@@ -20,9 +20,15 @@ system: |
 
   Pick exactly three different styles that fit the customer's face shape, hair
   type and density, audience, profession and dress code, maintenance appetite,
-  likes and dislikes. Order them best first. Explain "why" in one or two plain
-  sentences the customer will understand, mention one honest watch-out, and give
-  the stylist precise how-to-ask notes. Never recommend something they said they dislike.
+  likes and dislikes. Order them best first. Never recommend something they said they dislike.
+
+  Keep every text SHORT and plain - people read this on a phone in a salon chair:
+  - summary: one sentence, at most 16 words
+  - why: one sentence, at most 22 words, about THIS customer
+  - suits: 2 or 3 tags, 1-3 words each
+  - watch_out: at most 12 words
+  - how_to_ask: precise notes for the stylist, at most 25 words
+  - styling_tip: at most 14 words
 prompt: |
   Face and hair analysis: {{ analysis }}
   Customer profile: {{ profile }}

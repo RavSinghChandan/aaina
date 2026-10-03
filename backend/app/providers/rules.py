@@ -59,6 +59,13 @@ def profession_fit(text: str | None) -> str:
     return "any"
 
 
+def _colour(v: Any) -> list[int] | None:
+    """An [r, g, b] read from the photo on the phone; anything else is ignored."""
+    if isinstance(v, list) and len(v) == 3 and all(isinstance(x, (int, float)) and 0 <= x <= 255 for x in v):
+        return [int(x) for x in v]
+    return None
+
+
 @rule("face_analyst")
 def face_analyst(ctx: dict[str, Any]) -> dict[str, Any]:
     sr, inp = _self(ctx), _input(ctx)
@@ -69,20 +76,25 @@ def face_analyst(ctx: dict[str, Any]) -> dict[str, Any]:
     from_photo = measured is not None and face == measured
     hair_type = sr.get("hair_type") if sr.get("hair_type") in {"straight", "wavy", "curly", "coily"} else "straight"
     density = sr.get("hair_density") if sr.get("hair_density") in {"fine", "medium", "thick"} else "medium"
-    length = inp.get("hair_length_now") if inp.get("hair_length_now") in {"short", "medium", "long"} else "medium"
+    length = inp.get("hair_length_now") if inp.get("hair_length_now") in {"short", "medium", "long"} else (
+        pm.get("hair_length") if pm.get("hair_length") in {"short", "medium", "long"} else "medium")
     skin = sr.get("skin_type") if sr.get("skin_type") in {"oily", "dry", "combination", "normal", "sensitive"} else "unknown"
     return {
         "face_shape": face,
         "face_shape_confidence": round(float(pm.get("confidence") or 0.7), 2) if from_photo else (0.6 if sr.get("face_shape") else 0.4),
         "features": [f"{face.capitalize()} face shape ({'measured from your photo' if from_photo else 'from your answers'})"]
-                    + [str(x) for x in (pm.get("notes") or [])[:3] if from_photo],
+                    + [str(x) for x in (pm.get("notes") or [])[:3] if from_photo]
+                    + ([f"{pm['hair_color']} hair (from your photo)"] if isinstance(pm.get("hair_color"), str) and pm.get("hair_color") else []),
         "hair": {"type": hair_type, "density": density, "length": length,
                  "texture_notes": f"{density.capitalize()}, {hair_type} hair",
                  "visible_concerns": list(sr.get("hair_concerns") or [])},
         "skin": {"type": skin, "visible_concerns": list(sr.get("skin_concerns") or [])},
-        "beard": {"present": bool(inp.get("has_beard")), "notes": "Beard care included" if inp.get("has_beard") else ""},
+        "beard": {"present": bool(inp.get("has_beard")),
+                  "notes": ("Beard seen in your photo" if pm.get("beard") else "Beard care included") if inp.get("has_beard") else ""},
+        "appearance": {"skin": _colour(pm.get("skin_rgb")) or [217, 160, 122], "hair": _colour(pm.get("hair_rgb")) or [43, 29, 20]},
         "photo_quality": pm.get("quality") if pm.get("quality") in {"good", "ok", "poor"} else "ok",
-        "notes": ("Face shape measured on your device from 478 face points; hair and skin from your answers."
+        "notes": (("Face shape, hair colour and length measured on your device; skin from your answers." if pm.get("hair_color")
+                   else "Face shape measured on your device from 478 face points; hair and skin from your answers.")
                   if from_photo else "Based on your answers."),
     }
 

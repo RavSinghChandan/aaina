@@ -204,3 +204,15 @@ def test_photo_measurement_sets_face_shape():
     assert a["face_shape"] == "oblong" and a["face_shape_confidence"] == 0.82 and "measured from your photo" in a["features"][0]
     res = asyncio.run(eng.run("consultation", {"input": {"gender": "men", "self_report": {"face_shape": "round"}, "photo_measure": pm}}, reg.tenants["demo"]))
     assert res.outputs["analysis"]["face_shape"] == "round" and "from your answers" in res.outputs["analysis"]["features"][0]
+
+
+def test_preview_uses_customer_colours_and_beard():
+    import base64 as b64
+    reg = Registry()
+    eng = Engine(reg, {"llm": None, "offline": OfflineProvider()})
+    pm = {"face_shape": "oval", "skin_rgb": [180, 120, 90], "hair_rgb": [20, 18, 16], "beard": True}
+    res = asyncio.run(eng.run("consultation", {"input": {"gender": "men", "has_beard": True, "self_report": {}, "photo_measure": pm}}, reg.tenants["demo"]))
+    assert res.outputs["analysis"]["appearance"] == {"skin": [180, 120, 90], "hair": [20, 18, 16]}
+    svg = b64.b64decode(res.outputs["previews"]["previews"][0]["image"].split(",")[1]).decode()
+    assert "#b4785a" in svg.lower() or "#bf7f5f" in svg.lower()       # skin tone came through
+    assert 'opacity=".94"' in svg                                      # beard drawn

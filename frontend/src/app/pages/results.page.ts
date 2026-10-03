@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Api } from '../core/api.service';
+import { PhotoSession } from '../core/photo-session';
 import { Consultation, Meta, StyleOption } from '../core/models';
 import { OutputView } from '../shared/output-view';
 import { Chakra } from '../shared/chakra';
@@ -19,7 +20,7 @@ import { TopBar } from '../shared/top-bar';
             <chakra class="done-wheel" [steps]="steps()" [current]="steps().length" [finished]="true" [hubText]="{ big: '✓', small: '' }" />
             <div>
             <p class="eyebrow">All {{ steps().length }} steps done</p>
-            <h2>{{ c.customer.name ? c.customer.name + ', here are your looks' : 'Your three looks' }}</h2>
+            <h2>{{ name() ? name() + ', here are your looks' : 'Your three looks' }}</h2>
             </div>
           </div>
           <div class="row">
@@ -28,18 +29,25 @@ import { TopBar } from '../shared/top-bar';
           </div>
         </header>
 
-        @if (rec()?.summary; as sum) { <p class="lead">{{ sum }}</p> }
+        <div class="you card flat">
+          @if (session.photo(); as ph) { <img class="you-ph" [src]="ph" alt="You today" /> }
+          <div>
+            <p class="eyebrow">{{ session.photo() ? 'You today' : 'About you' }}</p>
+            <div class="chips">@for (t of youTags(); track t) { <span class="pill">{{ t }}</span> }</div>
+            @if (rec()?.summary; as sum) { <p class="sum">{{ sum }}</p> }
+          </div>
+        </div>
         <section class="looks" aria-label="Recommended haircuts">
           @for (o of options(); track o.style_id; let i = $index) {
             <article class="look card" [class.chosen]="chosen() === o.style_id">
               <div class="pv">
-                @if (preview(o.style_id); as src) { <img [src]="src" [alt]="'Preview of ' + o.name" loading="lazy" /> }
+                @if (preview(o.style_id); as src) { <img [src]="src" [alt]="'Drawing of ' + o.name + ' in your face shape and colours'" loading="lazy" /> }
                 <span class="rank">{{ i === 0 ? 'Best match' : '#' + (i + 1) }}</span>
                 <span class="score" [attr.aria-label]="o.match_score + ' percent match'">{{ o.match_score }}%</span>
               </div>
               <div class="body stack">
                 <h3>{{ o.name }}</h3>
-                <p>{{ o.why }}</p>
+                <p class="why">{{ o.why }}</p>
                 <div class="chips">@for (s of o.suits; track s) { <span class="pill brand">{{ s }}</span> }</div>
                 <dl class="meta">
                   <div><dt>Upkeep</dt><dd>{{ o.maintenance }}</dd></div>
@@ -89,6 +97,11 @@ import { TopBar } from '../shared/top-bar';
     .pv { position: relative; background: #0b1a05; aspect-ratio: 1 / 1; }
     @media (min-width: 900px) { .pv { aspect-ratio: 4 / 5; } }
     .pv img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
+    .you { display: flex; gap: 14px; align-items: center; padding: 14px; }
+    .you-ph { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; object-position: center 25%; flex: none; border: 3px solid var(--card); box-shadow: 0 0 0 2px var(--brand); }
+    .you .eyebrow { margin: 0 0 6px; }
+    .you .sum { margin: 8px 0 0; color: var(--ink-2); font-size: .95rem; }
+    .why { font-size: 1.02rem; line-height: 1.45; margin: 0; }
     .rank { position: absolute; top: 12px; left: 12px; background: #fff; border-radius: 999px; padding: 4px 10px; font-weight: 800; font-size: .78rem; }
     .score { position: absolute; top: 12px; right: 12px; background: var(--brand); color: #fff; border-radius: 999px; padding: 4px 10px; font-weight: 800; font-size: .85rem; }
     .body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
@@ -107,6 +120,20 @@ import { TopBar } from '../shared/top-bar';
 export class ResultsPage implements OnInit {
   id = input.required<string>();
   private api = inject(Api);
+  session = inject(PhotoSession);
+  name = computed(() => this.c()?.customer?.name?.trim() || null);
+  youTags = computed(() => {
+    const a = this.c()?.outputs?.['analysis'];
+    if (!a) return [];
+    const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
+    const colour = (a.features ?? []).find((f: string) => / hair \(from your photo\)$/.test(f))?.replace(' (from your photo)', '');
+    return [
+      a.face_shape && `${cap(a.face_shape === 'oblong' ? 'long' : a.face_shape)} face`,
+      colour,
+      a.hair?.length && `${cap(a.hair.length)} length`,
+      a.beard?.present && 'Beard',
+    ].filter(Boolean) as string[];
+  });
 
   c = signal<Consultation | null>(null);
   meta = signal<Meta | null>(null);

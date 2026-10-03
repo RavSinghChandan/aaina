@@ -1,9 +1,11 @@
 import { Component, ElementRef, OnDestroy, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TitleCasePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { Api } from '../core/api.service';
 import { FaceMeasure, measureFace, warmUp } from '../core/face-measure';
 import { fileToDataUrl, videoFrameToDataUrl } from '../core/image';
+import { PhotoSession } from '../core/photo-session';
 import { journeySteps } from '../core/journey';
 import { FormSection, IntakeForm, StepState } from '../core/models';
 import { Chakra } from '../shared/chakra';
@@ -14,7 +16,7 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
 
 @Component({
   selector: 'journey-page',
-  imports: [FormsModule, QuestionField, Chakra, TopBar],
+  imports: [FormsModule, TitleCasePipe, QuestionField, Chakra, TopBar],
   template: `
     <top-bar />
     <main class="wrap page layout" [class.revealing]="isReveal()">
@@ -90,7 +92,13 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
                       <ul class="legend small">
                         <li><i class="k length"></i>Length</li><li><i class="k forehead"></i>Forehead</li><li><i class="k cheek"></i>Cheekbones</li><li><i class="k jaw"></i>Jaw</li>
                       </ul>
-                      <p class="muted small">{{ m.notes.join(' · ') }}.@if (m.quality !== 'good') { Better light and a straight-on angle will make it more accurate.}</p>
+                      @if (m.hair || m.beard) {
+                        <div class="chips found">
+                          @if (m.hair) { <span class="pill"><i class="sw" [style.background]="'rgb(' + m.hair.rgb.join(',') + ')'"></i>{{ m.hair.color }} hair</span><span class="pill">{{ m.hair.length | titlecase }} length</span> }
+                          @if (m.beard) { <span class="pill">Beard</span> }
+                        </div>
+                      }
+                      <p class="muted small">{{ m.notes.slice(0, 2).join(' · ') }}.@if (m.quality !== 'good') { Better light and a straight-on angle will make it more accurate.}</p>
                     </div>
                   }
                   @if (measureError()) { <p class="err" role="alert">{{ measureError() }}</p> }
@@ -113,7 +121,7 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
             <div class="stack center reveal">
               <chakra class="big" [steps]="steps()" [current]="idx()" [spinning]="running()" [finished]="finished()" [beads]="beads()" [hubText]="hub()" />
               @if (!running() && !finished()) {
-                <h2>All set{{ answers()['name'] ? ', ' + answers()['name'] : '' }}.</h2>
+                <h2>All set{{ firstName() ? ', ' + firstName() : '' }}.</h2>
                 <p class="muted">Spin the chakra and seven AI agents get to work.</p>
                 <div class="chips summary">@for (c of summary(); track c) { <span class="pill">{{ c }}</span> }</div>
                 <button type="button" class="btn btn-brand spinbtn" (click)="submit()">Spin the chakra</button>
@@ -135,6 +143,12 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
                   <question-field [field]="f" [value]="answers()[f.id]" (valueChange)="setAnswer(f.id, $event)" />
                   @if (f.id === 'self_report.face_shape' && measure(); as m) {
                     <p class="from-photo small">📏 Measured from your photo: <strong>{{ shapeLabel(m.face_shape) }}</strong>. Change it if it looks wrong.</p>
+                  }
+                  @if (f.id === 'hair_length_now' && measure()?.hair; as h) {
+                    <p class="from-photo small">📏 From your photo: <strong>{{ h.length | titlecase }}</strong>.</p>
+                  }
+                  @if (f.id === 'has_beard' && measure()?.beard) {
+                    <p class="from-photo small">📏 We saw a beard in your photo.</p>
                   }
                 }
               </div>
@@ -208,6 +222,8 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
     .k { width: 18px; height: 4px; border-radius: 2px; display: inline-block; }
     .k.length { background: var(--gold); } .k.forehead { background: #A8A29E; } .k.cheek { background: #14B8A6; } .k.jaw { background: #EC4899; }
     .from-photo { margin-top: -6px; color: var(--brand); }
+    .found { margin: 8px 0 4px; }
+    .sw { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.15); }
     .err { color: var(--danger); font-weight: 600; }
     .reveal { padding-top: 4px; }
     .reveal .big { width: min(300px, 80vw); margin: 0 auto 4px; }
@@ -228,6 +244,7 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
 export class JourneyPage implements OnInit, OnDestroy {
   private api = inject(Api);
   private router = inject(Router);
+  private session = inject(PhotoSession);
   private video = viewChild<ElementRef<HTMLVideoElement>>('video');
 
   form = signal<IntakeForm | null>(null);
@@ -250,6 +267,7 @@ export class JourneyPage implements OnInit, OnDestroy {
   private pollTimer?: ReturnType<typeof setTimeout>;
 
   steps = computed(() => journeySteps(this.form()));
+  firstName = computed(() => String(this.answers()['name'] ?? '').trim());
   step = computed(() => this.steps().at(this.idx()));
   isReveal = computed(() => this.step()?.id === 'reveal');
   section = computed<FormSection | null>(() => this.form()?.sections.find(s => s.id === this.step()?.id) ?? null);
@@ -357,11 +375,17 @@ export class JourneyPage implements OnInit, OnDestroy {
     this.measuring.set(false);
     if ('error' in res) { this.measureError.set(res.error); return; }
     this.measure.set(res);
-    const prev = this.answers()['self_report.face_shape'];
-    if (!prev || prev === this.lastMeasured) this.setAnswer('self_report.face_shape', res.face_shape);
-    this.lastMeasured = res.face_shape;
+    // pre-fill what the photo showed, unless the customer already answered differently
+    const fill = (id: string, v: any) => {
+      const prev = this.answers()[id];
+      if (prev === undefined || prev === null || prev === this.lastMeasured[id]) this.setAnswer(id, v);
+      this.lastMeasured[id] = v;
+    };
+    fill('self_report.face_shape', res.face_shape);
+    if (res.hair) fill('hair_length_now', res.hair.length);
+    fill('has_beard', res.beard);
   }
-  private lastMeasured: string | null = null;
+  private lastMeasured: Record<string, any> = {};
 
   async submit() {
     this.error.set(null); this.running.set(true); this.finished.set(false); this.stepStates.set({});
@@ -369,11 +393,16 @@ export class JourneyPage implements OnInit, OnDestroy {
     const m = usePhoto ? this.measure() : null;
     try {
       const res = await this.api.startConsultation({
-        customer: { name: this.answers()['name'] || null },
+        customer: { name: (this.answers()['name'] ?? '').trim() || null },
         consent: { photo_processing: usePhoto, store_photo: false },
-        answers: { ...this.answers(), ...(m ? { photo_measure: { face_shape: m.face_shape, confidence: m.confidence, quality: m.quality, notes: m.notes, ratios: m.ratios } } : {}) },
+        answers: { ...this.answers(), name: (this.answers()['name'] ?? '').trim() || null, ...(m ? { photo_measure: {
+          face_shape: m.face_shape, confidence: m.confidence, quality: m.quality, notes: m.notes, ratios: m.ratios,
+          hair_length: m.hair?.length ?? null, hair_color: m.hair?.color ?? null, beard: m.beard,
+          hair_rgb: m.hair?.rgb ?? null, skin_rgb: m.skin,
+        } } : {}) },
         photo: usePhoto ? this.photo() : null,
       });
+      this.session.set(usePhoto ? this.photo() : null);
       this.poll(res.id);
     } catch (e: any) {
       this.running.set(false);

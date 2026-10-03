@@ -83,28 +83,59 @@ def _hair(shape: str) -> str:
     return "".join(parts)
 
 
+def _rgb(v: Any, default: tuple[int, int, int]) -> tuple[int, int, int]:
+    if isinstance(v, (list, tuple)) and len(v) == 3 and all(isinstance(x, (int, float)) and 0 <= x <= 255 for x in v):
+        return int(v[0]), int(v[1]), int(v[2])
+    return default
+
+
+def _hex(c: tuple[int, int, int], k: float = 1.0) -> str:
+    return "#" + "".join(f"{max(0, min(255, round(x * k))):02x}" for x in c)
+
+
+SKIN = (217, 160, 122)
+HAIR = (43, 29, 20)
+
+
 class SvgStyleCards:
+    """The customer's own colours (skin and hair read from their photo on the phone),
+    face shape and beard, wearing the recommended cut."""
+
     def render(self, option: dict[str, Any], style: dict[str, Any], analysis: dict[str, Any]) -> str:
         face = FACES.get(analysis.get("face_shape", "oval"), FACES["oval"])
+        look = analysis.get("appearance") or {}
+        skin, hair = _rgb(look.get("skin"), SKIN), _rgb(look.get("hair"), HAIR)
+        beard = bool((analysis.get("beard") or {}).get("present"))
         name = option.get("name") or style.get("name", "")
+        markup = _hair(style.get("shape", ""))
+        beard_svg = (
+            f'<path d="M{CX - 56},196 Q{CX - 54},250 {CX - 20},262 Q{CX},270 {CX + 20},262 Q{CX + 54},250 {CX + 56},196 '
+            f'Q{CX + 46},236 {CX + 18},238 Q{CX},232 {CX - 18},238 Q{CX - 46},236 {CX - 56},196 Z" fill="url(#hair)" opacity=".94"/>'
+            f'<path d="M{CX - 22},218 Q{CX},208 {CX + 22},218 Q{CX},214 {CX - 22},218 Z" fill="url(#hair)"/>'
+        ) if beard else ""
         svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 400" role="img" aria-label="{name} preview">
 <defs>
  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B1A05"/><stop offset="1" stop-color="#00262A"/></linearGradient>
- <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B1D14"/><stop offset="1" stop-color="#140D08"/></linearGradient>
+ <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{_hex(hair, 1.25)}"/><stop offset="1" stop-color="{_hex(hair, .7)}"/></linearGradient>
+ <radialGradient id="skin" cx="45%" cy="38%" r="70%"><stop offset="0" stop-color="{_hex(skin, 1.06)}"/><stop offset="1" stop-color="{_hex(skin, .9)}"/></radialGradient>
 </defs>
 <rect width="320" height="400" rx="24" fill="url(#bg)"/>
 <circle cx="{CX}" cy="190" r="150" fill="none" stroke="#86BC25" stroke-opacity=".18"/>
 <circle cx="{CX}" cy="190" r="120" fill="none" stroke="#00ABAB" stroke-opacity=".14" stroke-dasharray="3 6"/>
-<path d="M{CX - 34},250 L{CX - 30},300 Q{CX},314 {CX + 30},300 L{CX + 34},250 Z" fill="#C68B62"/>
-<path d="M{CX - 120},400 Q{CX - 110},310 {CX},304 Q{CX + 110},310 {CX + 120},400 Z" fill="#1F3A2E"/>
-<g fill="url(#hair)" class="back">{_back_only(_hair(style.get("shape", "")))}</g>
-<g fill="#D9A07A" stroke="#B57E59" stroke-width="1.5">{face}</g>
-<g fill="#3B2A1E"><ellipse cx="{CX - 22}" cy="184" rx="5" ry="3.4"/><ellipse cx="{CX + 22}" cy="184" rx="5" ry="3.4"/></g>
-<path d="M{CX - 14},224 Q{CX},232 {CX + 14},224" fill="none" stroke="#8A4B3A" stroke-width="2.4" stroke-linecap="round"/>
-<g fill="url(#hair)">{_front_only(_hair(style.get("shape", "")))}</g>
-
+<path d="M{CX - 34},250 L{CX - 30},300 Q{CX},314 {CX + 30},300 L{CX + 34},250 Z" fill="{_hex(skin, .86)}"/>
+<path d="M{CX - 120},400 Q{CX - 110},310 {CX},304 Q{CX + 110},310 {CX + 120},400 Z" fill="#E8E4DC"/>
+<path d="M{CX - 30},304 L{CX},336 L{CX + 30},304" fill="none" stroke="#C9C2B6" stroke-width="2"/>
+<g fill="url(#hair)" class="back">{_back_only(markup)}</g>
+<g fill="{_hex(skin, .92)}"><ellipse cx="{CX - 58}" cy="190" rx="9" ry="16"/><ellipse cx="{CX + 58}" cy="190" rx="9" ry="16"/></g>
+<g fill="url(#skin)" stroke="{_hex(skin, .78)}" stroke-width="1.5">{face}</g>
+<g fill="none" stroke="{_hex(hair, .9)}" stroke-width="4" stroke-linecap="round"><path d="M{CX - 34},168 Q{CX - 22},162 {CX - 10},167"/><path d="M{CX + 10},167 Q{CX + 22},162 {CX + 34},168"/></g>
+<g fill="#2A1E16"><ellipse cx="{CX - 22}" cy="184" rx="5" ry="3.4"/><ellipse cx="{CX + 22}" cy="184" rx="5" ry="3.4"/></g>
+<path d="M{CX - 3},190 Q{CX - 7},206 {CX - 2},210 Q{CX + 4},211 {CX + 6},208" fill="none" stroke="{_hex(skin, .7)}" stroke-width="2" stroke-linecap="round"/>
+{beard_svg}
+<path d="M{CX - 13},226 Q{CX},233 {CX + 13},226" fill="none" stroke="#7A3F33" stroke-width="2.4" stroke-linecap="round"/>
+<g fill="url(#hair)">{_front_only(markup)}</g>
 </svg>'''
-        svg = (svg.replace('class="hl"', 'fill="none" stroke="#5C4433" stroke-width="2" stroke-linecap="round"')
+        svg = (svg.replace('class="hl"', f'fill="none" stroke="{_hex(hair, 1.7)}" stroke-width="2" stroke-linecap="round"')
                   .replace('class="hp"', 'fill="none" stroke="#E8D9C8" stroke-width="2.4"'))
         return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
 
@@ -125,5 +156,5 @@ def render_previews(options: list[dict[str, Any]], styles_by_id: dict[str, dict[
     for opt in options:
         style = styles_by_id.get(opt.get("style_id"), {})
         out.append({"style_id": opt.get("style_id", ""), "image": _PROVIDER.render(opt, style, analysis),
-                    "caption": f"Illustrated preview of {opt.get('name', 'this cut')} on a {analysis.get('face_shape', 'oval')} face"})
+                    "caption": f"Your colours and face shape, illustrated: preview of {opt.get('name', 'this cut')} on a {analysis.get('face_shape', 'oval')} face"})
     return out

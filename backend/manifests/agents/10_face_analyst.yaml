@@ -41,6 +41,12 @@ output_schema:
       properties:
         present: { type: boolean }
         notes: { type: string }
+    appearance:
+      type: object
+      description: Skin and hair colour read from the photo on the phone, for the preview drawing
+      properties:
+        skin: { type: array, items: { type: integer } }
+        hair: { type: array, items: { type: integer } }
     photo_quality: { type: string, enum: [good, ok, poor] }
     notes: { type: string }
 ui: { view: facts, title: What we see, order: 10 }
