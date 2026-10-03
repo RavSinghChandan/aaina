@@ -1,0 +1,28 @@
+id: profile_builder
+title: 360° profile
+description: Combines who the customer is - work, lifestyle, taste and limits - into one style profile.
+kind: llm
+inputs: [input]
+effort: low
+system: |
+  You build a short, warm style profile for a salon customer from their own
+  answers. Respect how they describe their gender identity. Turn their work,
+  lifestyle, likes, dislikes and maintenance appetite into clear guidance a
+  stylist can act on. Do not invent facts they did not give.
+prompt: |
+  Customer answers: {{ input }}
+output_schema:
+  type: object
+  properties:
+    headline: { type: string }
+    audience: { type: string, enum: [women, men, all] }
+    profession_fit: { type: string, enum: [corporate, creative, healthcare, uniformed, student, homemaker, athletic, any] }
+    style_personality: { type: array, items: { type: string, enum: [classic, modern, bold, low-key, romantic, edgy, professional] } }
+    maintenance_appetite: { type: string, enum: [low, medium, high] }
+    lifestyle: { type: array, items: { type: string } }
+    likes: { type: array, items: { type: string } }
+    dislikes: { type: array, items: { type: string } }
+    constraints: { type: array, items: { type: string } }
+    care_priorities: { type: array, items: { type: string } }
+ui: { view: profile, title: Your 360° profile, order: 50 }
+offline: { rule: profile_builder }

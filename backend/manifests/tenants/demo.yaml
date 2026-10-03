@@ -1,0 +1,13 @@
+slug: demo
+name: Aaina Demo Salon
+plan: trial
+provider: auto
+workflows: [consultation, choose_style]
+branding:
+  primary: "#86BC25"
+  accent: "#00ABAB"
+  tagline: Find the look that is truly yours.
+settings:
+  store_photos: false
+  audience: [all]
+  city: Bengaluru

@@ -1,0 +1,11 @@
+id: consultation
+title: Full consultation
+description: Photo and answers in; three haircuts, previews, routines, a 360° profile and a care calendar out.
+steps:
+  - { id: analysis,       agent: face_analyst }
+  - { id: profile,        agent: profile_builder }
+  - { id: recommendation, agent: style_recommender, needs: [analysis, profile] }
+  - { id: previews,       agent: preview_renderer,  needs: [recommendation, analysis] }
+  - { id: hair_care,      agent: hair_care_planner, needs: [analysis, profile, recommendation] }
+  - { id: face_care,      agent: skin_care_planner, needs: [analysis, profile] }
+  - { id: calendar,       agent: care_calendar,     needs: [recommendation, hair_care] }

@@ -1,0 +1,47 @@
+id: face_analyst
+title: Face & hair analysis
+description: Reads the photo for face shape, hair type and density, visible scalp, skin and beard cues.
+kind: llm
+needs_image: true
+inputs: [input]
+effort: medium
+system: |
+  You are Aaina's analyst for an Indian salon. You look at one customer photo
+  (and any extra photos they chose to share) and describe only what a skilled
+  stylist could see: face shape, hair type, density, length, visible hair and
+  skin concerns, and beard. Be respectful and neutral. Never guess age, caste,
+  religion, health conditions or anything not needed for a haircut. If the photo
+  is unclear, say so and lean on what the customer told you.
+prompt: |
+  What the customer told us about themselves: {{ input.self_report }}
+  Gender identity: {{ input.gender }}. Current hair length: {{ input.hair_length_now }}.
+
+  Analyse the photo for a haircut consultation.
+output_schema:
+  type: object
+  properties:
+    face_shape: { type: string, enum: [oval, round, square, heart, oblong, diamond, triangle] }
+    face_shape_confidence: { type: number }
+    features: { type: array, items: { type: string } }
+    hair:
+      type: object
+      properties:
+        type: { type: string, enum: [straight, wavy, curly, coily] }
+        density: { type: string, enum: [fine, medium, thick] }
+        length: { type: string, enum: [short, medium, long] }
+        texture_notes: { type: string }
+        visible_concerns: { type: array, items: { type: string } }
+    skin:
+      type: object
+      properties:
+        type: { type: string, enum: [oily, dry, combination, normal, sensitive, unknown] }
+        visible_concerns: { type: array, items: { type: string } }
+    beard:
+      type: object
+      properties:
+        present: { type: boolean }
+        notes: { type: string }
+    photo_quality: { type: string, enum: [good, ok, poor] }
+    notes: { type: string }
+ui: { view: facts, title: What we see, order: 10 }
+offline: { rule: face_analyst }

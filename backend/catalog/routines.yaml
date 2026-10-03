@@ -1,0 +1,67 @@
+# Grooming routines Aaina can recommend. Grooming guidance, not medical advice.
+# Ingredients are named, never brands, so any salon can stock its own products.
+
+hair:
+  base:
+    - { when: "2-3 times a week", step: "Wash with a mild, sulphate-free shampoo", why: "Daily washing strips natural oils" }
+    - { when: "Every wash", step: "Condition mid-lengths to ends only", why: "Keeps the scalp from getting oily" }
+    - { when: "Weekly", step: "Pre-wash oil massage (coconut or almond), 30 minutes", why: "Reduces breakage and dryness" }
+    - { when: "Daily", step: "Detangle from the ends up with a wide-tooth comb", why: "Prevents breakage" }
+  concerns:
+    dandruff:
+      - { when: "2 washes a week", step: "Shampoo with zinc pyrithione or ketoconazole, leave 3-5 minutes", why: "Controls the yeast behind flaking" }
+      - { when: "Ongoing", step: "Skip heavy oiling on the scalp the night before", why: "Oil feeds dandruff" }
+    hair_fall:
+      - { when: "Weekly", step: "Gentle scalp massage, 5 minutes", why: "Supports circulation" }
+      - { when: "Daily", step: "Protein- and iron-rich diet, enough water", why: "Hair is built from protein" }
+      - { when: "If fall continues 3 months", step: "See a dermatologist", why: "Rule out thyroid, iron or hormonal causes" }
+    frizz:
+      - { when: "Every wash", step: "Leave-in conditioner or light serum on damp ends", why: "Seals the cuticle" }
+      - { when: "Nightly", step: "Satin pillowcase or loose plait", why: "Less friction while sleeping" }
+    oily_scalp:
+      - { when: "Every 2 days", step: "Clarifying shampoo once a week, mild one otherwise", why: "Removes build-up" }
+    dry_scalp:
+      - { when: "Weekly", step: "Aloe vera or light oil on the scalp before washing", why: "Restores moisture" }
+    split_ends:
+      - { when: "Every 8-10 weeks", step: "Trim half an inch", why: "Split ends only stop at the scissors" }
+      - { when: "Before heat styling", step: "Heat protectant spray", why: "Prevents new splits" }
+    greying:
+      - { when: "Optional", step: "Ammonia-free or herbal colour at the salon", why: "Gentler on hair" }
+    thinning:
+      - { when: "Styling", step: "Volumising products and shorter, blunt lines", why: "Makes hair look fuller" }
+      - { when: "If it continues", step: "See a dermatologist", why: "Early care works best" }
+    color_treated:
+      - { when: "Every wash", step: "Colour-safe, sulphate-free shampoo", why: "Colour lasts longer" }
+      - { when: "Weekly", step: "Deep-conditioning mask", why: "Colour dries hair out" }
+  styling:
+    curly: "Scrunch curl cream into soaking wet hair, air-dry or diffuse; never brush dry curls."
+    wavy: "Scrunch a light mousse into damp hair; plop or air-dry for defined waves."
+    straight: "Blow-dry with a round brush for lift; a little texture spray for grip."
+    coily: "Moisturise with the LOC method (leave-in, oil, cream); protective styles at night."
+
+skin:
+  base:
+    am:
+      - { step: "Gentle face wash", why: "Removes overnight oil" }
+      - { step: "Light moisturiser", why: "Keeps the skin barrier healthy" }
+      - { step: "Sunscreen SPF 30+ (PA+++), reapply outdoors", why: "Prevents tan, dark spots and early ageing in Indian sun" }
+    pm:
+      - { step: "Cleanse; double-cleanse if you wore sunscreen or makeup", why: "Clears pores" }
+      - { step: "Moisturiser suited to your skin type", why: "Repairs overnight" }
+  types:
+    oily: { cleanser: "Gel or foaming face wash with salicylic acid", moisturiser: "Oil-free gel moisturiser" }
+    dry: { cleanser: "Cream or milk cleanser", moisturiser: "Ceramide cream" }
+    combination: { cleanser: "Gentle gel cleanser", moisturiser: "Light lotion; gel on the T-zone" }
+    normal: { cleanser: "Gentle face wash", moisturiser: "Light lotion" }
+    sensitive: { cleanser: "Fragrance-free, soap-free cleanser", moisturiser: "Fragrance-free barrier cream" }
+  concerns:
+    acne: { step: "Niacinamide or salicylic acid serum at night; never pick", why: "Calms breakouts" }
+    tan: { step: "Daily SPF and a gentle exfoliant twice a week", why: "Fades tan safely" }
+    pigmentation: { step: "Vitamin C serum in the morning under SPF", why: "Evens tone" }
+    dullness: { step: "Exfoliate twice a week; drink enough water", why: "Restores glow" }
+    dark_circles: { step: "Sleep 7-8 hours; caffeine or vitamin C eye cream", why: "Reduces puffiness" }
+    beard_care: { step: "Beard oil daily, trim weekly, wash with mild cleanser", why: "Softer beard, healthy skin underneath" }
+  salon_services:
+    - { service: "Clean-up / basic facial", weeks: 4 }
+    - { service: "Hair spa", weeks: 4 }
+    - { service: "Scalp treatment", weeks: 6 }

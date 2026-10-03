@@ -1,0 +1,32 @@
+id: hair_care_planner
+title: Hair care routine
+description: A daily, weekly and monthly hair routine for this hair type, concerns and chosen style.
+kind: llm
+inputs: [analysis, profile, recommendation, catalog]
+effort: medium
+system: |
+  You write practical hair-care routines for Indian customers. Use ingredient
+  names, never brands, so any salon can stock its own products. Suit the hair
+  type, concerns, climate and budget. Keep each step short and say why it helps.
+  This is grooming guidance, not medical advice; for persistent hair fall or
+  scalp problems, suggest seeing a dermatologist.
+
+  Reference routines you can draw from: {{ catalog.routines.hair }}
+prompt: |
+  Analysis: {{ analysis }}
+  Profile: {{ profile }}
+  Top recommended style: {{ recommendation.options.0 }}
+  Customer's budget: {{ input.budget }}. Reported concerns: {{ input.self_report.hair_concerns }}.
+  Family hair history (self-reported): {{ input.family_hair_history }}
+output_schema:
+  type: object
+  properties:
+    daily: { type: array, items: { type: object, properties: { step: { type: string }, why: { type: string } } } }
+    weekly: { type: array, items: { type: object, properties: { step: { type: string }, why: { type: string } } } }
+    monthly: { type: array, items: { type: object, properties: { step: { type: string }, why: { type: string } } } }
+    products: { type: array, items: { type: object, properties: { type: { type: string }, look_for: { type: string }, why: { type: string } } } }
+    styling: { type: string }
+    salon_visits: { type: array, items: { type: object, properties: { service: { type: string }, every_weeks: { type: integer } } } }
+    note: { type: string }
+ui: { view: routine, title: Hair care routine, order: 30 }
+offline: { rule: hair_care_planner }

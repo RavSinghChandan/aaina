@@ -1,0 +1,18 @@
+id: preview_renderer
+title: Style previews
+description: Draws a preview card for each recommended style. Swap in an image model through the image provider.
+kind: image
+inputs: [recommendation, analysis]
+output_schema:
+  type: object
+  properties:
+    previews:
+      type: array
+      items:
+        type: object
+        properties:
+          style_id: { type: string }
+          image: { type: string }
+          caption: { type: string }
+ui: { view: previews, hidden: true, order: 25 }
+offline: { rule: style_previews }

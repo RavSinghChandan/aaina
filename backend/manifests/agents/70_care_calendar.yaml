@@ -1,0 +1,22 @@
+id: care_calendar
+title: Care calendar
+description: When to come back - trims, spa and routine check-ins - from the chosen style and routine.
+kind: rule
+inputs: [recommendation, hair_care, input]
+output_schema:
+  type: object
+  properties:
+    style_id: { type: string }
+    next_visit_days: { type: integer }
+    events:
+      type: array
+      items:
+        type: object
+        properties:
+          in_days: { type: integer }
+          date: { type: string }
+          title: { type: string }
+          kind: { type: string, enum: [trim, spa, facial, routine, check-in] }
+          detail: { type: string }
+ui: { view: timeline, title: Your care calendar, order: 60 }
+offline: { rule: care_calendar }

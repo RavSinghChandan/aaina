@@ -1,0 +1,378 @@
+# Aaina hairstyle catalog - the only styles the recommender may choose from.
+# Add a style here and every salon can recommend it; no code changes.
+#
+# face_shapes: oval round square heart oblong diamond triangle
+# hair_types:  straight wavy curly coily
+# professions: corporate creative healthcare uniformed student homemaker athletic any
+# maintenance: low medium high     trim_weeks: typical weeks between trims
+# shape: silhouette used by the offline preview renderer
+
+styles:
+  # ---------------- women / long and medium ----------------
+  - id: long-layers
+    name: Long Layers
+    audience: women
+    length: long
+    face_shapes: [oval, round, square, heart, diamond]
+    hair_types: [straight, wavy, curly]
+    professions: [any]
+    vibes: [classic, romantic, low-key]
+    maintenance: low
+    trim_weeks: 10
+    styling_minutes: 5
+    shape: long-layered
+    why: Soft layers add movement and lift without losing length.
+    how_to_ask: Keep length, add long layers starting below the chin, light texturising at the ends.
+  - id: face-framing-layers
+    name: Face-Framing Layers
+    audience: women
+    length: long
+    face_shapes: [round, square, oblong, heart]
+    hair_types: [straight, wavy]
+    professions: [any]
+    vibes: [modern, romantic]
+    maintenance: medium
+    trim_weeks: 8
+    styling_minutes: 10
+    shape: long-framed
+    why: Front pieces that start at the cheekbone soften strong jaws and slim a round face.
+    how_to_ask: Shortest front layer at the cheekbone, blend back into length, keep the back full.
+  - id: step-cut
+    name: Step Cut
+    audience: women
+    length: long
+    face_shapes: [oval, oblong, heart, diamond]
+    hair_types: [straight, wavy]
+    professions: [corporate, creative, student, homemaker, any]
+    vibes: [classic, bold]
+    maintenance: medium
+    trim_weeks: 8
+    styling_minutes: 10
+    shape: long-stepped
+    why: Visible steps give volume on straight Indian hair that tends to fall flat.
+    how_to_ask: Defined steps from the crown down, each step about two inches, keep ends healthy.
+  - id: u-cut
+    name: U-Cut
+    audience: women
+    length: long
+    face_shapes: [oval, round, heart, oblong]
+    hair_types: [straight, wavy]
+    professions: [any]
+    vibes: [classic, low-key]
+    maintenance: low
+    trim_weeks: 12
+    styling_minutes: 5
+    shape: long-u
+    why: A soft U at the back keeps length while making ends look thicker.
+    how_to_ask: U-shape at the back, light layers, no heavy thinning at the ends.
+  - id: butterfly-cut
+    name: Butterfly Cut
+    audience: women
+    length: long
+    face_shapes: [oval, square, heart, oblong]
+    hair_types: [straight, wavy]
+    professions: [creative, student, any]
+    vibes: [modern, bold, romantic]
+    maintenance: medium
+    trim_weeks: 8
+    styling_minutes: 15
+    shape: long-butterfly
+    why: Short top layers create a blow-dry bounce; long underneath keeps length.
+    how_to_ask: Short face-framing top layers at the chin, long layers underneath, blend for volume.
+  - id: curtain-bangs-layers
+    name: Curtain Bangs with Layers
+    audience: women
+    length: long
+    face_shapes: [oval, oblong, square, heart]
+    hair_types: [straight, wavy]
+    professions: [creative, student, corporate]
+    vibes: [modern, romantic]
+    maintenance: high
+    trim_weeks: 5
+    styling_minutes: 10
+    shape: long-bangs
+    why: Parted bangs shorten a long face and draw attention to the eyes.
+    how_to_ask: Curtain bangs parted in the middle, longest at the cheekbone, layers to blend.
+  - id: curly-layered
+    name: Curly Layered Cut
+    audience: women
+    length: medium
+    face_shapes: [oval, round, heart, oblong, diamond]
+    hair_types: [curly, coily, wavy]
+    professions: [any]
+    vibes: [bold, romantic, low-key]
+    maintenance: medium
+    trim_weeks: 10
+    styling_minutes: 10
+    shape: medium-curly
+    why: Cutting curl by curl removes the triangle shape and gives even, bouncy volume.
+    how_to_ask: Dry cut or curl-by-curl, round layers, no razor or heavy thinning.
+  - id: textured-lob
+    name: Textured Lob
+    audience: women
+    length: medium
+    face_shapes: [oval, round, square, heart]
+    hair_types: [straight, wavy]
+    professions: [corporate, creative, healthcare, any]
+    vibes: [modern, professional]
+    maintenance: medium
+    trim_weeks: 8
+    styling_minutes: 8
+    shape: lob
+    why: A collarbone length that looks polished at work and grows out gracefully.
+    how_to_ask: Collarbone length, slightly longer in front, point-cut texture at the ends.
+  - id: feathered-cut
+    name: Feathered Cut
+    audience: women
+    length: medium
+    face_shapes: [round, square, oblong, heart]
+    hair_types: [straight, wavy]
+    professions: [any]
+    vibes: [classic, romantic]
+    maintenance: medium
+    trim_weeks: 8
+    styling_minutes: 10
+    shape: medium-feathered
+    why: Feathered sides flick away from the face and widen narrow faces.
+    how_to_ask: Feathered layers swept back at the sides, soft movement, medium length.
+  # ---------------- women / short ----------------
+  - id: blunt-bob
+    name: Blunt Bob
+    audience: women
+    length: short
+    face_shapes: [oval, oblong, heart, diamond]
+    hair_types: [straight]
+    professions: [corporate, creative, healthcare]
+    vibes: [bold, professional, modern]
+    maintenance: high
+    trim_weeks: 6
+    styling_minutes: 5
+    shape: bob
+    why: A clean jaw-length line looks sharp and confident and makes fine hair look thicker.
+    how_to_ask: Jaw-length blunt line, no layers, one length all round.
+  - id: pixie
+    name: Pixie Cut
+    audience: women
+    length: short
+    face_shapes: [oval, heart, diamond]
+    hair_types: [straight, wavy]
+    professions: [creative, athletic, healthcare]
+    vibes: [bold, edgy, low-key]
+    maintenance: high
+    trim_weeks: 5
+    styling_minutes: 3
+    shape: pixie
+    why: Shows off cheekbones and eyes; almost no styling time.
+    how_to_ask: Short back and sides, longer textured top, soft fringe swept to one side.
+  - id: asymmetric-bob
+    name: Asymmetric Bob
+    audience: women
+    length: short
+    face_shapes: [round, square, heart]
+    hair_types: [straight, wavy]
+    professions: [creative, corporate]
+    vibes: [edgy, modern]
+    maintenance: high
+    trim_weeks: 6
+    styling_minutes: 8
+    shape: bob-asym
+    why: An angled line breaks up a round or square outline and adds edge.
+    how_to_ask: One side chin length, the other two inches longer, stacked back.
+  # ---------------- unisex ----------------
+  - id: wolf-cut
+    name: Wolf Cut
+    audience: all
+    length: medium
+    face_shapes: [oval, square, heart, diamond]
+    hair_types: [straight, wavy, curly]
+    professions: [creative, student]
+    vibes: [edgy, bold, modern]
+    maintenance: medium
+    trim_weeks: 7
+    styling_minutes: 8
+    shape: wolf
+    why: Choppy layers with a shaggy crown; strong texture without a harsh line.
+    how_to_ask: Heavy layers at the crown, shorter on top, longer at the nape, choppy texture.
+  - id: curtain-hair
+    name: Curtain Hair (middle part)
+    audience: all
+    length: medium
+    face_shapes: [oval, square, oblong, diamond]
+    hair_types: [straight, wavy]
+    professions: [creative, student, any]
+    vibes: [modern, low-key]
+    maintenance: medium
+    trim_weeks: 7
+    styling_minutes: 8
+    shape: curtain
+    why: A centre part with length at the front frames the face softly.
+    how_to_ask: Leave the front long enough to tuck behind the ears, centre part, tidy the sides.
+  - id: buzz-cut
+    name: Buzz Cut
+    audience: all
+    length: short
+    face_shapes: [oval, square, diamond]
+    hair_types: [straight, wavy, curly, coily]
+    professions: [athletic, uniformed, healthcare, any]
+    vibes: [low-key, bold]
+    maintenance: medium
+    trim_weeks: 3
+    styling_minutes: 0
+    shape: buzz
+    why: Zero styling, very clean, ideal in heat and for active days.
+    how_to_ask: One length all over with clippers, guard 2 or 3, clean neckline.
+  # ---------------- men ----------------
+  - id: classic-side-part
+    name: Classic Side Part
+    audience: men
+    length: short
+    face_shapes: [oval, round, square, oblong, heart]
+    hair_types: [straight, wavy]
+    professions: [corporate, healthcare, uniformed, any]
+    vibes: [classic, professional]
+    maintenance: medium
+    trim_weeks: 4
+    styling_minutes: 5
+    shape: side-part
+    why: The most trusted office look; works with almost every face.
+    how_to_ask: Scissor cut, two inches on top, tapered sides, natural side part.
+  - id: low-taper-fade
+    name: Low Taper Fade
+    audience: men
+    length: short
+    face_shapes: [oval, round, square, oblong, diamond]
+    hair_types: [straight, wavy, curly, coily]
+    professions: [corporate, creative, student, any]
+    vibes: [modern, professional]
+    maintenance: medium
+    trim_weeks: 3
+    styling_minutes: 5
+    shape: taper
+    why: A clean, gradual fade that stays office-safe and looks fresh longer.
+    how_to_ask: Low taper fade starting just above the ear, blend into a scissor-cut top.
+  - id: textured-crop
+    name: Textured Crop
+    audience: men
+    length: short
+    face_shapes: [oval, oblong, square, heart]
+    hair_types: [straight, wavy]
+    professions: [creative, student, athletic]
+    vibes: [modern, low-key]
+    maintenance: low
+    trim_weeks: 4
+    styling_minutes: 3
+    shape: crop
+    why: A short textured top with a fringe hides a high forehead and needs little styling.
+    how_to_ask: Short textured top pushed forward, blunt fringe, mid fade on the sides.
+  - id: quiff
+    name: Quiff
+    audience: men
+    length: short
+    face_shapes: [oval, round, square, diamond]
+    hair_types: [straight, wavy]
+    professions: [corporate, creative]
+    vibes: [classic, bold]
+    maintenance: medium
+    trim_weeks: 4
+    styling_minutes: 8
+    shape: quiff
+    why: Height at the front lengthens a round face and adds confidence.
+    how_to_ask: Longer front swept up and back, shorter sides, blow-dry with volume.
+  - id: pompadour
+    name: Modern Pompadour
+    audience: men
+    length: short
+    face_shapes: [oval, round, square]
+    hair_types: [straight, wavy]
+    professions: [creative, corporate]
+    vibes: [bold, classic]
+    maintenance: high
+    trim_weeks: 4
+    styling_minutes: 10
+    shape: pompadour
+    why: A statement look with volume; best for thick hair.
+    how_to_ask: Three to four inches on top, high fade on the sides, styled back with volume.
+  - id: crew-cut
+    name: Crew Cut
+    audience: men
+    length: short
+    face_shapes: [oval, square, oblong, diamond]
+    hair_types: [straight, wavy, curly, coily]
+    professions: [uniformed, athletic, healthcare, corporate]
+    vibes: [classic, low-key, professional]
+    maintenance: low
+    trim_weeks: 4
+    styling_minutes: 1
+    shape: crew
+    why: Neat, masculine and almost no upkeep between visits.
+    how_to_ask: Short tapered sides, slightly longer front graduating shorter to the crown.
+  - id: curly-top-fade
+    name: Curly Top with Fade
+    audience: men
+    length: short
+    face_shapes: [oval, round, square, oblong]
+    hair_types: [curly, coily, wavy]
+    professions: [creative, student, athletic, any]
+    vibes: [bold, modern]
+    maintenance: medium
+    trim_weeks: 4
+    styling_minutes: 5
+    shape: curly-fade
+    why: Lets natural curls be the feature while the fade keeps it neat.
+    how_to_ask: Keep curl length on top, shape round, mid or high fade, define curls with cream.
+  - id: slick-back
+    name: Slick Back
+    audience: men
+    length: medium
+    face_shapes: [oval, square, oblong, diamond]
+    hair_types: [straight, wavy]
+    professions: [corporate, creative]
+    vibes: [classic, bold]
+    maintenance: medium
+    trim_weeks: 5
+    styling_minutes: 6
+    shape: slick-back
+    why: Polished and powerful; shows off strong features.
+    how_to_ask: Longer on top, tapered sides, styled straight back with pomade.
+  - id: hard-part-fade
+    name: Hard Part Fade
+    audience: men
+    length: short
+    face_shapes: [oval, round, square, heart]
+    hair_types: [straight, wavy, curly]
+    professions: [creative, student]
+    vibes: [edgy, modern]
+    maintenance: high
+    trim_weeks: 3
+    styling_minutes: 5
+    shape: hard-part
+    why: A shaved part line gives a sharp, deliberate finish.
+    how_to_ask: Mid fade, shaved hard part on the natural parting side, combed over top.
+  - id: medium-flow
+    name: Medium-Length Flow
+    audience: men
+    length: medium
+    face_shapes: [oval, square, oblong, diamond]
+    hair_types: [straight, wavy]
+    professions: [creative, student]
+    vibes: [low-key, romantic]
+    maintenance: low
+    trim_weeks: 8
+    styling_minutes: 4
+    shape: flow
+    why: Relaxed length pushed back behind the ears; effortless and grown-out.
+    how_to_ask: Grow to ear length, trim for shape only, light layers so it flows back.
+  - id: caesar
+    name: Caesar Cut
+    audience: men
+    length: short
+    face_shapes: [oval, oblong, diamond, triangle]
+    hair_types: [straight, wavy, curly, coily]
+    professions: [any]
+    vibes: [classic, low-key]
+    maintenance: low
+    trim_weeks: 4
+    styling_minutes: 1
+    shape: caesar
+    why: A short straight fringe reduces a high forehead or receding hairline.
+    how_to_ask: Even short length, short horizontal fringe at the front, tapered sides.

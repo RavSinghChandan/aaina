@@ -1,0 +1,89 @@
+# The customer questionnaire. The app renders whatever is here - add a question,
+# and it appears in the app and reaches every agent as input.<field id>.
+id: intake
+title: About you
+sections:
+  - id: you
+    title: You
+    fields:
+      - { id: name, label: "Your first name", type: text, optional: true, placeholder: "Optional" }
+      - id: gender
+        label: How should we style you?
+        type: choice
+        options:
+          - { value: women, label: "Women's styles" }
+          - { value: men, label: "Men's styles" }
+          - { value: all, label: "Show me everything" }
+      - id: age_range
+        label: Age range
+        type: choice
+        optional: true
+        options: [{ value: "under-18", label: "Under 18" }, { value: "18-25", label: "18–25" }, { value: "26-35", label: "26–35" }, { value: "36-50", label: "36–50" }, { value: "50+", label: "50+" }]
+      - { id: profession, label: "What do you do?", type: text, placeholder: "e.g. software engineer, doctor, student" }
+  - id: lifestyle
+    title: Your lifestyle
+    fields:
+      - id: lifestyle
+        label: Your days are mostly…
+        type: multi
+        options: [{ value: office, label: Office }, { value: outdoors, label: Outdoors }, { value: gym, label: Gym & sport }, { value: travel, label: Travel }, { value: events, label: Events & parties }, { value: home, label: At home }]
+      - id: maintenance
+        label: Time you'll spend on hair each morning
+        type: choice
+        options: [{ value: low, label: "Under 5 min" }, { value: medium, label: "5–15 min" }, { value: high, label: "I love styling" }]
+      - id: budget
+        label: Monthly hair & skin budget
+        type: choice
+        options: [{ value: budget, label: "Under ₹500" }, { value: mid, label: "₹500–2,000" }, { value: premium, label: "₹2,000+" }]
+  - id: taste
+    title: Your taste
+    fields:
+      - id: vibes
+        label: Pick the vibes you like
+        type: multi
+        options: [{ value: classic, label: Classic }, { value: modern, label: Modern }, { value: bold, label: Bold }, { value: low-key, label: Low-key }, { value: romantic, label: Romantic }, { value: edgy, label: Edgy }, { value: professional, label: Professional }]
+      - id: hair_goals
+        label: Your hair goal
+        type: multi
+        options: [{ value: "keep length", label: Keep my length }, { value: "go short", label: Go short }, { value: "more volume", label: More volume }, { value: "easy to manage", label: Easy to manage }, { value: "a fresh change", label: A fresh change }]
+      - { id: likes, label: "Styles you love", type: tags, optional: true, placeholder: "e.g. layers, fade" }
+      - { id: dislikes, label: "Never give me…", type: tags, optional: true, placeholder: "e.g. bangs, very short" }
+  - id: hair
+    title: Your hair & skin
+    fields:
+      - id: hair_length_now
+        label: Hair length right now
+        type: choice
+        options: [{ value: short, label: Short }, { value: medium, label: Medium }, { value: long, label: Long }]
+      - id: self_report.hair_type
+        label: Hair type
+        type: choice
+        optional: true
+        options: [{ value: straight, label: Straight }, { value: wavy, label: Wavy }, { value: curly, label: Curly }, { value: coily, label: Coily }]
+      - id: self_report.face_shape
+        label: Face shape (if you know)
+        type: choice
+        optional: true
+        options: [{ value: oval, label: Oval }, { value: round, label: Round }, { value: square, label: Square }, { value: heart, label: Heart }, { value: oblong, label: Long }, { value: diamond, label: Diamond }]
+      - id: self_report.hair_concerns
+        label: Any hair concerns?
+        type: multi
+        optional: true
+        options: [{ value: dandruff, label: Dandruff }, { value: hair_fall, label: Hair fall }, { value: frizz, label: Frizz }, { value: oily_scalp, label: Oily scalp }, { value: dry_scalp, label: Dry scalp }, { value: split_ends, label: Split ends }, { value: greying, label: Greying }, { value: thinning, label: Thinning }, { value: color_treated, label: Coloured hair }]
+      - id: self_report.skin_type
+        label: Skin type
+        type: choice
+        optional: true
+        options: [{ value: oily, label: Oily }, { value: dry, label: Dry }, { value: combination, label: Combination }, { value: normal, label: Normal }, { value: sensitive, label: Sensitive }]
+      - id: self_report.skin_concerns
+        label: Any skin concerns?
+        type: multi
+        optional: true
+        options: [{ value: acne, label: Acne }, { value: tan, label: Tan }, { value: pigmentation, label: Dark spots }, { value: dullness, label: Dullness }, { value: dark_circles, label: Dark circles }]
+      - { id: has_beard, label: "I have a beard", type: toggle, optional: true }
+      - id: family_hair_history
+        label: In your family, is there…
+        type: choice
+        optional: true
+        hint: "Self-reported only. We never collect genetic data."
+        options: [{ value: none, label: Nothing notable }, { value: early_greying, label: Early greying }, { value: thinning, label: Thinning or hair fall }, { value: both, label: Both }, { value: unsure, label: Not sure }]

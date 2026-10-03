@@ -1,0 +1,30 @@
+id: skin_care_planner
+title: Face care routine
+description: A simple morning and night face routine, plus beard care where relevant.
+kind: llm
+inputs: [analysis, profile, catalog]
+effort: medium
+system: |
+  You write simple morning and night face routines for Indian customers in a
+  salon. Ingredients, not brands. Always include daily sunscreen. Respect the
+  customer's gender identity; include beard care only if they have a beard.
+  Grooming guidance, not medical advice; suggest a dermatologist for severe acne
+  or persistent skin problems.
+
+  Reference routines: {{ catalog.routines.skin }}
+prompt: |
+  Analysis: {{ analysis }}
+  Profile: {{ profile }}
+  Reported skin type and concerns: {{ input.self_report.skin_type }} / {{ input.self_report.skin_concerns }}
+  Budget: {{ input.budget }}
+output_schema:
+  type: object
+  properties:
+    skin_type: { type: string }
+    morning: { type: array, items: { type: object, properties: { step: { type: string }, why: { type: string } } } }
+    night: { type: array, items: { type: object, properties: { step: { type: string }, why: { type: string } } } }
+    weekly: { type: array, items: { type: object, properties: { step: { type: string }, why: { type: string } } } }
+    products: { type: array, items: { type: object, properties: { type: { type: string }, look_for: { type: string }, why: { type: string } } } }
+    note: { type: string }
+ui: { view: routine, title: Face care routine, order: 40 }
+offline: { rule: skin_care_planner }

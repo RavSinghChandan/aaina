@@ -1,0 +1,21 @@
+# Render Blueprint: New > Blueprint > pick this repo. Free web service.
+services:
+  - type: web
+    name: aaina-api
+    runtime: docker
+    plan: free
+    rootDir: aaina/backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false            # paste your Neon / Supabase Postgres URL
+      - key: ALLOWED_ORIGINS
+        value: https://aaina.vercel.app
+      - key: ADMIN_KEY
+        generateValue: true
+      - key: AAINA_PROVIDER
+        value: auto

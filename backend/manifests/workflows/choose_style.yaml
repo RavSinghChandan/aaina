@@ -1,0 +1,5 @@
+id: choose_style
+title: Customer picks a style
+description: Re-plans the care calendar around the style the customer chose.
+steps:
+  - { id: calendar, agent: care_calendar }

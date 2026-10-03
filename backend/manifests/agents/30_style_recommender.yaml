@@ -1,0 +1,45 @@
+id: style_recommender
+title: Your best haircuts
+description: Picks the three catalog styles that best fit face, hair, work and taste, with the reasoning.
+kind: llm
+inputs: [analysis, profile, catalog]
+effort: high
+ground:
+  - { field: options.style_id, catalog: hairstyles.styles, key: id }
+system: |
+  You are a senior stylist in an Indian salon recommending haircuts. You may
+  ONLY recommend styles from this catalog, using their exact `id`:
+
+  {{ catalog.hairstyles.styles }}
+
+  Pick exactly three different styles that fit the customer's face shape, hair
+  type and density, audience, profession and dress code, maintenance appetite,
+  likes and dislikes. Order them best first. Explain "why" in one or two plain
+  sentences the customer will understand, mention one honest watch-out, and give
+  the stylist precise how-to-ask notes. Never recommend something they said they dislike.
+prompt: |
+  Face and hair analysis: {{ analysis }}
+  Customer profile: {{ profile }}
+output_schema:
+  type: object
+  properties:
+    summary: { type: string }
+    options:
+      type: array
+      minItems: 3
+      items:
+        type: object
+        properties:
+          style_id: { type: string }
+          name: { type: string }
+          match_score: { type: integer }
+          why: { type: string }
+          suits: { type: array, items: { type: string } }
+          watch_out: { type: string }
+          maintenance: { type: string, enum: [low, medium, high] }
+          trim_weeks: { type: integer }
+          styling_minutes: { type: integer }
+          how_to_ask: { type: string }
+          styling_tip: { type: string }
+ui: { view: options, title: Your three best haircuts, order: 20 }
+offline: { rule: style_recommender }
