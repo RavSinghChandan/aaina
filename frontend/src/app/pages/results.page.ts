@@ -72,9 +72,9 @@ import { SalonBar } from '../shared/salon-bar';
     </main>
   `,
   styles: [`
-    .looks { display: grid; grid-auto-flow: column; grid-auto-columns: 86%; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 12px; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+    .looks { display: grid; grid-auto-flow: column; grid-auto-columns: 86%; gap: 14px; align-items: start; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 12px; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
     .look { scroll-snap-align: center; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
-    @media (min-width: 900px) { .looks { grid-auto-flow: row; grid-template-columns: repeat(3, 1fr); overflow: visible; margin: 0; padding: 4px 0; } }
+    @media (min-width: 900px) { .looks { grid-auto-flow: row; grid-template-columns: repeat(3, 1fr); overflow: visible; margin: 0; padding: 4px 0; align-items: stretch; } }
     .look.chosen { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 30%, transparent), var(--shadow); }
     .pv { position: relative; background: #0b1a05; aspect-ratio: 1 / 1; }
     @media (min-width: 900px) { .pv { aspect-ratio: 4 / 5; } }

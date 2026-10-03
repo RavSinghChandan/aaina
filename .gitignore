@@ -9,3 +9,4 @@ frontend/.angular/
 .vercel
 .vscode/
 .DS_Store
+.logs/

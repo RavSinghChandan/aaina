@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit, computed, inject, input, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Api } from '../core/api.service';
@@ -148,7 +148,7 @@ export class ConsultPage implements OnInit, OnDestroy {
   error = signal<string | null>(null);
   steps = signal<Record<string, StepState>>({});
   consentPhoto = false; consentStore = false; customerName = ''; phone = '';
-  private stream?: MediaStream;
+  private stream = signal<MediaStream | null>(null);
   private pollTimer?: ReturnType<typeof setTimeout>;
 
   section = computed<FormSection | null>(() => this.form()?.sections[this.sectionIdx()] ?? null);
@@ -167,6 +167,19 @@ export class ConsultPage implements OnInit, OnDestroy {
     if (this.stage() === 'questions' && this.sectionIdx() === (this.form()?.sections.length ?? 1) - 1) return 'Show my looks';
     return 'Continue';
   });
+
+  constructor() {
+    // Attach the camera stream as soon as the <video> element exists. With zoneless
+    // rendering the element appears after the stream resolves, so wire it reactively.
+    effect(() => {
+      const v = this.video()?.nativeElement;
+      const s = this.stream();
+      if (v && s && v.srcObject !== s) {
+        v.srcObject = s;
+        v.play().catch(() => {});
+      }
+    });
+  }
 
   async ngOnInit() {
     await this.store.load(this.slug());
@@ -211,9 +224,9 @@ export class ConsultPage implements OnInit, OnDestroy {
   async startCamera() {
     this.camError.set(null);
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 } }, audio: false });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 } }, audio: false });
+      this.stream.set(stream);
       this.camOn.set(true);
-      queueMicrotask(() => { const v = this.video()?.nativeElement; if (v) v.srcObject = this.stream!; });
     } catch {
       this.camError.set('Camera not available — use Upload photo instead.');
     }
@@ -225,7 +238,7 @@ export class ConsultPage implements OnInit, OnDestroy {
     this.stopCamera();
   }
   retake() { this.photo.set(null); this.startCamera(); }
-  stopCamera() { this.stream?.getTracks().forEach(t => t.stop()); this.stream = undefined; this.camOn.set(false); }
+  stopCamera() { this.stream()?.getTracks().forEach(t => t.stop()); this.stream.set(null); this.camOn.set(false); }
 
   async upload(ev: Event) {
     const file = (ev.target as HTMLInputElement).files?.[0];
