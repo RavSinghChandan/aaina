@@ -20,7 +20,7 @@ import { TopBar } from '../shared/top-bar';
         <label class="field"><span class="label">Username</span>
           <input class="input" name="username" [(ngModel)]="username" autocomplete="username" autocapitalize="off" spellcheck="false" required maxlength="32" /></label>
         @if (error()) { <p class="err" role="alert">{{ error() }}</p> }
-        <button type="submit" class="btn btn-primary btn-block" [disabled]="busy() || !tenantKey.trim() || !username.trim()">{{ busy() ? 'Signing in…' : 'Sign in' }}</button>
+        <button type="submit" class="btn btn-primary btn-block" [disabled]="busy() || !tenantKey.trim() || !username.trim()">{{ busy() ? (waking() ? 'Waking Aaina up…' : 'Signing in…') : 'Sign in' }}</button>
         <p class="muted small center">No tenant key yet? <a routerLink="/register">Register your salon</a></p>
       </form>
     </main>
@@ -33,6 +33,7 @@ export class LoginPage {
   private route = inject(ActivatedRoute);
   tenantKey = ''; username = '';
   busy = signal(false);
+  waking = signal(false);
   error = signal<string | null>(null);
 
   /** A sign-in link (/login#k=<tenant key>&u=<username>) fills the form and signs in. The part after # never reaches a server. */
@@ -49,13 +50,22 @@ export class LoginPage {
   async submit() {
     this.busy.set(true); this.error.set(null);
     try {
-      await this.auth.login(this.tenantKey.trim(), this.username.trim());
+      // the free server sleeps when idle: keep trying for about a minute while it wakes up
+      for (let attempt = 0; ; attempt++) {
+        try { await this.auth.login(this.tenantKey.trim(), this.username.trim()); break; }
+        catch (e) {
+          const st = e instanceof HttpErrorResponse ? e.status : 0;
+          if (![0, 502, 503, 504].includes(st) || attempt >= 14) throw e;
+          this.waking.set(true);
+          await new Promise(r => setTimeout(r, 4000));
+        }
+      }
       const next = this.route.snapshot.queryParamMap.get('next') || '/start';
       this.router.navigateByUrl(next.startsWith('/') ? next : '/start');
     } catch (e) {
       const s = e instanceof HttpErrorResponse ? e.status : 0;
       this.error.set(s === 401 ? 'Tenant key or username is not right.' : s === 403 ? 'This access has been turned off. Please contact Aaina.'
         : s === 429 ? 'Too many attempts. Please wait a few minutes.' : 'Could not reach Aaina. It may be waking up — try again in a few seconds.');
-    } finally { this.busy.set(false); }
+    } finally { this.busy.set(false); this.waking.set(false); }
   }
 }

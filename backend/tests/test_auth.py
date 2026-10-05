@@ -120,3 +120,13 @@ def test_any_render_deploy_requires_sign_in(tmp_path, monkeypatch):
         assert c.get("/api/auth/status").json() == {"required": True}
         assert c.post("/api/t/demo/consultations", json=BODY).status_code == 401
         assert c.get("/api/admin/registrations").status_code == 401
+
+
+def test_keys_stay_valid_when_the_secret_is_read_late(monkeypatch):
+    """The secret comes from the environment at call time (after .env loads), not at import."""
+    monkeypatch.delenv("AAINA_SECRET", raising=False)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test-one")
+    k = auth.tenant_key("glow-salon", "priya")
+    assert auth.check_tenant_key(k, "priya") == "glow-salon"
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test-two")          # a different server secret
+    assert auth.check_tenant_key(k, "priya") is None

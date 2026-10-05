@@ -40,10 +40,19 @@ TOKEN_DAYS = 7
 DAILY_PER_USER = int(os.getenv("AAINA_DAILY_PER_USER", "10"))
 DAILY_TOTAL = int(os.getenv("AAINA_DAILY_TOTAL", "150"))
 DAILY_PER_IP = int(os.getenv("AAINA_DAILY_PER_IP", "6"))
-_AI_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-# Stable secrets without extra setup: derived from the server-only AI key, so keys and tokens survive restarts.
-_SECRET = (os.getenv("AAINA_SECRET")
-           or (hashlib.sha256(b"aaina-token:" + _AI_KEY.encode()).hexdigest() if _AI_KEY else secrets.token_hex(32))).encode()
+_FALLBACK = secrets.token_hex(32)
+
+
+def _ai_key() -> str:
+    return os.getenv("DEEPSEEK_API_KEY", "")
+
+
+def _secret() -> bytes:
+    """Stable without extra setup: derived from the server-only AI key, so keys and tokens survive restarts.
+    Read at call time, after backend/.env has been loaded."""
+    if os.getenv("AAINA_SECRET"):
+        return os.getenv("AAINA_SECRET", "").encode()
+    return (hashlib.sha256(b"aaina-token:" + _ai_key().encode()).hexdigest() if _ai_key() else _FALLBACK).encode()
 _EMAIL = re.compile(r"^[^@\s]{1,64}@[^@\s]+\.[a-z]{2,}$", re.I)
 _USERNAME = re.compile(r"^[a-z0-9][a-z0-9._-]{1,31}$")
 
@@ -59,7 +68,7 @@ def auth_required() -> bool:
 
 def derived_admin_key() -> str:
     """An admin key derived from the server-only AI key, so the admin page works with no extra setup."""
-    return hashlib.sha256(b"aaina-admin:" + _AI_KEY.encode()).hexdigest()[:24] if _AI_KEY else ""
+    return hashlib.sha256(b"aaina-admin:" + _ai_key().encode()).hexdigest()[:24] if _ai_key() else ""
 
 
 def require_admin(x_admin_key: str | None = Header(default=None)) -> None:
@@ -83,7 +92,7 @@ def _unb64(s: str) -> bytes:
 
 
 def _mac(*parts: str) -> bytes:
-    return hmac.new(_SECRET, "|".join(parts).encode(), hashlib.sha256).digest()
+    return hmac.new(_secret(), "|".join(parts).encode(), hashlib.sha256).digest()
 
 
 def tenant_key(slug: str, username: str) -> str:
