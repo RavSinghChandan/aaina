@@ -19,3 +19,10 @@ services:
         value: https://aaina-ai.vercel.app,https://aaina-eight.vercel.app
       - key: ADMIN_KEY
         generateValue: true
+      # Sign-in: visitors need an access code before the AI runs (protects the DeepSeek key).
+      - key: AAINA_ENV
+        value: production        # with no code set, consultations stay locked (fail closed)
+      - key: AAINA_SECRET
+        generateValue: true      # signs the login tokens
+      - key: AAINA_ACCESS_CODE
+        sync: false              # the code you share; several codes allowed, comma separated

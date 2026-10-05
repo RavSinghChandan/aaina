@@ -415,6 +415,7 @@ export class JourneyPage implements OnInit, OnDestroy {
       this.poll(res.id);
     } catch (e: any) {
       this.running.set(false);
+      if (e?.status === 401) { this.router.navigate(['/login'], { queryParams: { next: '/start' } }); return; }
       this.error.set(e?.error?.detail ?? 'Could not reach Aaina. Check that the server is running and try again.');
     }
   }

@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, select
 
 from ..db.models import Consultation, Customer, Tenant
+from .auth import charge, require_user
 from ..harness.manifests import TenantSpec
 
 router = APIRouter(prefix="/api")
@@ -173,7 +174,8 @@ def tenant_public(t: Tenant = Depends(get_tenant), st=Depends(state)):
 
 # ------------------------------------------------------------------ consultations
 @router.post("/t/{slug}/consultations", status_code=202)
-async def start_consultation(body: ConsultationIn, background: BackgroundTasks, t: Tenant = Depends(get_tenant), st=Depends(state)):
+async def start_consultation(body: ConsultationIn, background: BackgroundTasks, t: Tenant = Depends(get_tenant), st=Depends(state),
+                             user: str = Depends(require_user)):
     spec = tenant_spec(t)
     if "consultation" not in spec.workflows:
         raise HTTPException(403, "Consultations are not enabled for this salon")
@@ -181,6 +183,7 @@ async def start_consultation(body: ConsultationIn, background: BackgroundTasks, 
         raise HTTPException(422, "Photo consent is required before we can analyse a photo")
     if len(body.extra_photos) > MAX_EXTRA_PHOTOS:
         raise HTTPException(422, f"Up to {MAX_EXTRA_PHOTOS} extra photos")
+    charge(user)                                        # per-user and whole-app daily caps protect the AI key
     photo = parse_image(body.photo)
     extras = [img for img in (parse_image(p) for p in body.extra_photos) if img]
     answers = normalise_answers(body.answers)
@@ -271,7 +274,8 @@ def get_consultation(cid: str, t: Tenant = Depends(get_tenant), st=Depends(state
 
 
 @router.post("/t/{slug}/consultations/{cid}/choose")
-async def choose_style(cid: str, body: ChooseIn, t: Tenant = Depends(get_tenant), st=Depends(state)):
+async def choose_style(cid: str, body: ChooseIn, t: Tenant = Depends(get_tenant), st=Depends(state),
+                       user: str = Depends(require_user)):
     with st.sessions() as db:
         c = db.scalar(select(Consultation).where(Consultation.id == cid, Consultation.tenant_id == t.id))
         if not c:
