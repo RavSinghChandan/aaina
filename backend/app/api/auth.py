@@ -5,7 +5,7 @@ Visitors sign in with their name and an access code the owner shares
 with a signed token (HMAC-SHA256, 7 days) - nothing is stored, so it survives
 free-tier restarts. Only the endpoints that spend AI credit require it.
 
-Fail closed: in production (AAINA_ENV=production) with no access code set,
+Fail closed: in production (AAINA_ENV=production, or any Render deploy) with no access code set,
 nobody can start a consultation. Locally, with no code set, sign-in is off.
 """
 from __future__ import annotations
@@ -39,7 +39,8 @@ def _codes() -> list[str]:
 
 
 def auth_required() -> bool:
-    return bool(_codes()) or os.getenv("AAINA_ENV", "").lower() == "production"
+    # Render sets RENDER on every service, so a hosted deploy is locked even before its settings sync.
+    return bool(_codes()) or os.getenv("AAINA_ENV", "").lower() == "production" or bool(os.getenv("RENDER"))
 
 
 def _b64(b: bytes) -> str:

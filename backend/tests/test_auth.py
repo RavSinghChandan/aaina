@@ -60,3 +60,12 @@ def test_production_without_a_code_is_closed(tmp_path, monkeypatch):
     with TestClient(create_app(database_url=f"sqlite:///{tmp_path}/p.db", llm="offline")) as c:
         assert c.post("/api/t/demo/consultations", json=BODY).status_code == 401
         assert c.post("/api/auth/login", json={"name": "x", "code": "anything"}).status_code == 401
+
+
+def test_any_render_deploy_is_closed_without_a_code(tmp_path, monkeypatch):
+    monkeypatch.delenv("AAINA_ACCESS_CODE", raising=False)
+    monkeypatch.delenv("AAINA_ENV", raising=False)
+    monkeypatch.setenv("RENDER", "true")
+    with TestClient(create_app(database_url=f"sqlite:///{tmp_path}/r.db", llm="offline")) as c:
+        assert c.get("/api/auth/status").json() == {"required": True}
+        assert c.post("/api/t/demo/consultations", json=BODY).status_code == 401
