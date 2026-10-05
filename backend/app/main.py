@@ -14,7 +14,11 @@ from .api.routes import router
 from .db.models import Base, Tenant, make_engine, make_session_factory
 from .harness import Engine, Registry
 from .providers import OfflineProvider, make_llm
-from .providers.local_hair import make_image_provider
+try:                                    # the local photo editor needs torch/diffusers/Pillow;
+    from .providers.local_hair import make_image_provider   # without them (e.g. free hosting) we use drawings
+except ImportError:                     # pragma: no cover
+    def make_image_provider():
+        return None
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
