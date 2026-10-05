@@ -13,15 +13,17 @@ export class Auth {
   private http = inject(HttpClient);
   readonly session = signal<Session | null>(read());
   readonly name = computed(() => this.session()?.name ?? null);
-  private required?: Promise<boolean>;
+  private status?: Promise<{ required: boolean; code: boolean }>;
 
-  isRequired(): Promise<boolean> {
-    return (this.required ??= firstValueFrom(this.http.get<{ required: boolean }>(`${API_BASE}/api/auth/status`))
-      .then(r => r.required).catch(() => true));               // if unsure, ask people to sign in
+  private getStatus() {
+    return (this.status ??= firstValueFrom(this.http.get<{ required: boolean; code?: boolean }>(`${API_BASE}/api/auth/status`))
+      .then(r => ({ required: r.required, code: !!r.code })).catch(() => ({ required: true, code: false })));   // if unsure, ask people to sign in
   }
+  isRequired(): Promise<boolean> { return this.getStatus().then(s => s.required); }
+  needsCode(): Promise<boolean> { return this.getStatus().then(s => s.code); }
 
-  async login(name: string, code: string): Promise<void> {
-    const r = await firstValueFrom(this.http.post<{ token: string; name: string }>(`${API_BASE}/api/auth/login`, { name, code }));
+  async login(name: string, email: string, code = ''): Promise<void> {
+    const r = await firstValueFrom(this.http.post<{ token: string; name: string }>(`${API_BASE}/api/auth/login`, { name, email, code }));
     this.set({ token: r.token, name: r.name });
   }
 

@@ -14,13 +14,17 @@ import { TopBar } from '../shared/top-bar';
       <form class="card login stack" (ngSubmit)="submit()" novalidate>
         <p class="eyebrow">Sign in</p>
         <h1 class="lt">Welcome to Aaina</h1>
-        <p class="muted">Enter your name and the access code you were given. It keeps the AI for the people it is meant for.</p>
+        <p class="muted">Free, and takes ten seconds. Signing in keeps the AI fair for everyone: each person gets {{ perDay }} consultations a day.</p>
         <label class="field"><span class="label">Your name</span>
           <input class="input" name="name" [(ngModel)]="name" autocomplete="given-name" required maxlength="60" /></label>
-        <label class="field"><span class="label">Access code</span>
-          <input class="input" name="code" [(ngModel)]="code" type="password" autocomplete="current-password" required maxlength="120" /></label>
+        <label class="field"><span class="label">Email</span>
+          <input class="input" name="email" [(ngModel)]="email" type="email" inputmode="email" autocomplete="email" required maxlength="120" /></label>
+        @if (needsCode()) {
+          <label class="field"><span class="label">Access code</span>
+            <input class="input" name="code" [(ngModel)]="code" type="password" autocomplete="current-password" maxlength="120" /></label>
+        }
         @if (error()) { <p class="err" role="alert">{{ error() }}</p> }
-        <button type="submit" class="btn btn-primary btn-block" [disabled]="busy() || !name.trim() || !code.trim()">{{ busy() ? 'Signing in…' : 'Sign in' }}</button>
+        <button type="submit" class="btn btn-primary btn-block" [disabled]="busy() || !name.trim() || !email.trim() || (needsCode() && !code.trim())">{{ busy() ? 'Signing in…' : 'Sign in' }}</button>
         <p class="muted small">Free to use. You stay signed in on this device for 7 days.</p>
       </form>
     </main>
@@ -31,19 +35,22 @@ export class LoginPage {
   private auth = inject(Auth);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  name = ''; code = '';
+  name = ''; email = ''; code = '';
+  readonly perDay = 10;
+  needsCode = signal(false);
+  constructor() { this.auth.needsCode().then(v => this.needsCode.set(v)); }
   busy = signal(false);
   error = signal<string | null>(null);
 
   async submit() {
     this.busy.set(true); this.error.set(null);
     try {
-      await this.auth.login(this.name.trim(), this.code.trim());
+      await this.auth.login(this.name.trim(), this.email.trim(), this.code.trim());
       const next = this.route.snapshot.queryParamMap.get('next') || '/start';
       this.router.navigateByUrl(next.startsWith('/') ? next : '/start');
     } catch (e) {
       const status = e instanceof HttpErrorResponse ? e.status : 0;
-      this.error.set(status === 401 ? 'That access code is not right.' : status === 429 ? 'Too many attempts. Please wait a few minutes.'
+      this.error.set(status === 401 ? 'That access code is not right.' : status === 422 ? 'Please enter a valid email address.' : status === 429 ? 'Too many attempts. Please wait a few minutes.'
         : 'Could not reach Aaina. It may be waking up — try again in a few seconds.');
     } finally { this.busy.set(false); }
   }

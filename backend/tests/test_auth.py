@@ -22,7 +22,7 @@ def login(c, code="mirror-2026", name="Priya"):
 
 
 def test_status_and_wrong_code(client):
-    assert client.get("/api/auth/status").json() == {"required": True}
+    assert client.get("/api/auth/status").json() == {"required": True, "code": True}
     assert login(client, code="nope").status_code == 401
 
 
@@ -53,13 +53,13 @@ def test_login_attempts_are_limited(client):
     assert codes[:10] == [401] * 10 and codes[10] == 429
 
 
-def test_production_without_a_code_is_closed(tmp_path, monkeypatch):
+def test_production_without_a_code_needs_sign_in(tmp_path, monkeypatch):
     monkeypatch.delenv("AAINA_ACCESS_CODE", raising=False)
     monkeypatch.setenv("AAINA_ENV", "production")
     auth._attempts.clear()
     with TestClient(create_app(database_url=f"sqlite:///{tmp_path}/p.db", llm="offline")) as c:
         assert c.post("/api/t/demo/consultations", json=BODY).status_code == 401
-        assert c.post("/api/auth/login", json={"name": "x", "code": "anything"}).status_code == 401
+        assert c.post("/api/auth/login", json={"name": "x", "code": "anything"}).status_code == 422   # no code set: needs an email
 
 
 def test_any_render_deploy_is_closed_without_a_code(tmp_path, monkeypatch):
@@ -67,5 +67,21 @@ def test_any_render_deploy_is_closed_without_a_code(tmp_path, monkeypatch):
     monkeypatch.delenv("AAINA_ENV", raising=False)
     monkeypatch.setenv("RENDER", "true")
     with TestClient(create_app(database_url=f"sqlite:///{tmp_path}/r.db", llm="offline")) as c:
-        assert c.get("/api/auth/status").json() == {"required": True}
+        assert c.get("/api/auth/status").json()["required"] is True
         assert c.post("/api/t/demo/consultations", json=BODY).status_code == 401
+
+
+def test_open_sign_in_with_email_and_network_cap(tmp_path, monkeypatch):
+    """Without an access code, anyone signs in with name + email; caps bound the spend."""
+    monkeypatch.delenv("AAINA_ACCESS_CODE", raising=False)
+    monkeypatch.setenv("RENDER", "true")
+    monkeypatch.setattr(auth, "DAILY_PER_IP", 3)
+    auth._attempts.clear(); auth._usage.clear()
+    with TestClient(create_app(database_url=f"sqlite:///{tmp_path}/o.db", llm="offline")) as c:
+        assert c.get("/api/auth/status").json() == {"required": True, "code": False}
+        assert c.post("/api/auth/login", json={"name": "A", "email": "not-an-email"}).status_code == 422
+        codes = []
+        for i in range(4):     # a new account each time does not get around the per-network cap
+            t = c.post("/api/auth/login", json={"name": "A", "email": f"a{i}@x.com"}).json()["token"]
+            codes.append(c.post("/api/t/demo/consultations", json=BODY, headers={"Authorization": f"Bearer {t}"}).status_code)
+        assert codes == [202, 202, 202, 429]

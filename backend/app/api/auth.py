@@ -1,9 +1,10 @@
 """Simple, free sign-in that protects the paid AI calls.
 
-Visitors sign in with their name and an access code the owner shares
-(AAINA_ACCESS_CODE, one or more codes separated by commas). The server answers
-with a signed token (HMAC-SHA256, 7 days) - nothing is stored, so it survives
-free-tier restarts. Only the endpoints that spend AI credit require it.
+Visitors sign in with their name and email (or, if AAINA_ACCESS_CODE is set,
+with a shared access code). The server answers with a signed token
+(HMAC-SHA256, 7 days) - nothing is stored, so it survives free-tier restarts.
+Only the endpoints that spend AI credit require it, and hard daily caps per
+person, per network and for the whole app bound what the AI key can spend.
 
 Fail closed: in production (AAINA_ENV=production, or any Render deploy) with no access code set,
 nobody can start a consultation. Locally, with no code set, sign-in is off.
@@ -15,6 +16,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import secrets
 import time
 from collections import defaultdict, deque
@@ -27,7 +29,12 @@ router = APIRouter(prefix="/api/auth")
 TOKEN_DAYS = 7
 DAILY_PER_USER = int(os.getenv("AAINA_DAILY_PER_USER", "10"))
 DAILY_TOTAL = int(os.getenv("AAINA_DAILY_TOTAL", "150"))
-_SECRET = (os.getenv("AAINA_SECRET") or secrets.token_hex(32)).encode()
+DAILY_PER_IP = int(os.getenv("AAINA_DAILY_PER_IP", "6"))
+# A stable secret without extra setup: derived from the server-only AI key, so tokens survive restarts.
+_SECRET = (os.getenv("AAINA_SECRET")
+           or (hashlib.sha256(b"aaina-token:" + os.getenv("DEEPSEEK_API_KEY", "").encode()).hexdigest()
+               if os.getenv("DEEPSEEK_API_KEY") else secrets.token_hex(32))).encode()
+_EMAIL = re.compile(r"^[^@\s]{1,64}@[^@\s]+\.[a-z]{2,}$", re.I)
 
 _attempts: dict[str, deque[float]] = defaultdict(deque)       # login attempts per IP, last 15 minutes
 _usage: dict[str, int] = defaultdict(int)                       # AI runs per user per day
@@ -51,9 +58,9 @@ def _unb64(s: str) -> bytes:
     return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
 
 
-def make_token(name: str, now: float | None = None) -> str:
+def make_token(name: str, now: float | None = None, who: str = "") -> str:
     issued = time.time() if now is None else now
-    payload = _b64(json.dumps({"n": name, "exp": int(issued + TOKEN_DAYS * 86400)}).encode())
+    payload = _b64(json.dumps({"n": name, "u": who or name, "exp": int(issued + TOKEN_DAYS * 86400)}).encode())
     sig = _b64(hmac.new(_SECRET, payload.encode(), hashlib.sha256).digest())
     return f"{payload}.{sig}"
 
@@ -72,12 +79,13 @@ def read_token(token: str) -> dict | None:
 
 class LoginIn(BaseModel):
     name: str = Field(min_length=1, max_length=60)
-    code: str = Field(min_length=1, max_length=120)
+    email: str = Field(default="", max_length=120)
+    code: str = Field(default="", max_length=120)
 
 
 @router.get("/status")
 def status():
-    return {"required": auth_required()}
+    return {"required": auth_required(), "code": bool(_codes())}
 
 
 @router.post("/login")
@@ -91,21 +99,25 @@ def login(body: LoginIn, request: Request):
         raise HTTPException(429, "Too many attempts. Try again in a few minutes.")
     window.append(now)
     codes = _codes()
-    if not codes or not any(hmac.compare_digest(body.code.strip(), c) for c in codes):
-        raise HTTPException(401, "That access code is not right.")
+    if codes:
+        if not any(hmac.compare_digest(body.code.strip(), c) for c in codes):
+            raise HTTPException(401, "That access code is not right.")
+    elif not _EMAIL.match(body.email.strip()):
+        raise HTTPException(422, "Please enter a valid email address.")
     name = body.name.strip()
-    return {"token": make_token(name), "name": name, "days": TOKEN_DAYS}
+    return {"token": make_token(name, who=body.email.strip().lower() or name), "name": name, "days": TOKEN_DAYS}
 
 
-def require_user(authorization: str | None = Header(default=None)) -> str:
-    """Dependency for endpoints that spend AI credit. Returns the user's name."""
+def require_user(request: Request, authorization: str | None = Header(default=None)) -> str:
+    """Dependency for endpoints that spend AI credit. Returns 'user|ip' for the caps."""
     if not auth_required():
         return "local"
     token = (authorization or "").removeprefix("Bearer ").strip()
     data = read_token(token) if token else None
     if not data:
         raise HTTPException(401, "Please sign in to continue.")
-    return data["n"]
+    ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "?")
+    return f"{data.get('u') or data['n']}|{ip}"
 
 
 def charge(user_key: str) -> None:
@@ -118,7 +130,12 @@ def charge(user_key: str) -> None:
         _usage_day["day"] = today
     if _usage["__total__"] >= DAILY_TOTAL:
         raise HTTPException(429, "Today's free limit for the whole app is used up. Please come back tomorrow.")
-    if _usage[user_key] >= DAILY_PER_USER:
+    user, _, ip = user_key.partition("|")
+    if _usage["u:" + user] >= DAILY_PER_USER:
         raise HTTPException(429, f"You have used today's {DAILY_PER_USER} free consultations. Please come back tomorrow.")
-    _usage[user_key] += 1
+    if ip and _usage["ip:" + ip] >= DAILY_PER_IP:
+        raise HTTPException(429, "Today's free consultations from this network are used up. Please come back tomorrow.")
+    _usage["u:" + user] += 1
+    if ip:
+        _usage["ip:" + ip] += 1
     _usage["__total__"] += 1
