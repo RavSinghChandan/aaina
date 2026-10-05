@@ -35,6 +35,17 @@ export class LoginPage {
   busy = signal(false);
   error = signal<string | null>(null);
 
+  /** A sign-in link (/login#k=<tenant key>&u=<username>) fills the form and signs in. The part after # never reaches a server. */
+  constructor() {
+    const hash = new URLSearchParams((typeof location !== 'undefined' ? location.hash : '').replace(/^#/, ''));
+    const k = hash.get('k'), u = hash.get('u');
+    if (k && u) {
+      this.tenantKey = k; this.username = u;
+      history.replaceState(null, '', location.pathname + location.search);   // drop the key from the address bar
+      this.submit();
+    }
+  }
+
   async submit() {
     this.busy.set(true); this.error.set(null);
     try {

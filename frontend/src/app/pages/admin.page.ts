@@ -35,9 +35,11 @@ const KEY = 'aaina.admin';
               <div><dt>Salon</dt><dd>{{ k.business }}</dd></div>
               <div><dt>Tenant key</dt><dd class="mono">{{ k.tenant_key }}</dd></div>
               <div><dt>Username</dt><dd class="mono">{{ k.username }}</dd></div>
+              <div><dt>Sign-in link</dt><dd class="mono"><a [href]="link(k)" target="_blank" rel="noopener">{{ link(k) }}</a></dd></div>
             </dl>
             <div class="row">
-              <button type="button" class="btn btn-primary btn-sm" (click)="copy(message(k))">{{ copied() ? 'Copied ✓' : 'Copy message to send' }}</button>
+              <button type="button" class="btn btn-primary btn-sm" (click)="copy(link(k))">{{ copied() ? 'Copied ✓' : 'Copy sign-in link' }}</button>
+              <button type="button" class="btn btn-ghost btn-sm" (click)="copy(message(k))">Copy message</button>
               @if (k.email) { <a class="btn btn-ghost btn-sm" [href]="mailto(k)">Email it</a> }
               <button type="button" class="btn btn-ghost btn-sm" (click)="issued.set(null)">Done</button>
             </div>
@@ -80,7 +82,8 @@ const KEY = 'aaina.admin';
             <article class="card req">
               <div class="req-main"><strong>{{ r.business }}</strong><span class="muted small">{{ r.username }} · <span class="mono">{{ r.tenant_key }}</span></span></div>
               <div class="row">
-                <button type="button" class="btn btn-ghost btn-sm" (click)="copy(message(r))">Copy</button>
+                <button type="button" class="btn btn-ghost btn-sm" (click)="copy(link(r))">Copy link</button>
+                <button type="button" class="btn btn-ghost btn-sm" (click)="copy(message(r))">Copy message</button>
                 <button type="button" class="btn btn-ghost btn-sm" (click)="reject(r)">Turn off</button>
               </div>
             </article>
@@ -155,8 +158,12 @@ export class AdminPage {
     } finally { this.busy.set(false); }
   }
 
+  /** One-click sign-in: the key sits after #, so it is never sent to a server. */
+  link(k: { tenant_key: string | null; username: string | null }) {
+    return `${location.origin}/login#k=${encodeURIComponent(k.tenant_key || '')}&u=${encodeURIComponent(k.username || '')}`;
+  }
   message(k: { owner: string; business: string; tenant_key: string | null; username: string | null }) {
-    return `Hi ${k.owner}, your salon ${k.business} is ready on Aaina.\n\nSign in at https://aaina-ai.vercel.app/login\nTenant key: ${k.tenant_key}\nUsername: ${k.username}`;
+    return `Hi ${k.owner}, your salon ${k.business} is ready on Aaina.\n\nOne-click sign-in: ${this.link(k)}\n\nOr sign in at ${location.origin}/login with\nTenant key: ${k.tenant_key}\nUsername: ${k.username}`;
   }
   mailto(k: Reg) { return `mailto:${k.email}?subject=${encodeURIComponent('Your Aaina access')}&body=${encodeURIComponent(this.message(k))}`; }
   async copy(text: string) { try { await navigator.clipboard.writeText(text); this.copied.set(true); } catch { /* clipboard blocked */ } }
