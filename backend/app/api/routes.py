@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, select
 
 from ..db.models import Consultation, Customer, Tenant
-from .auth import charge, require_user
+from .auth import charge, check_tenant, ensure_tenant, read_token, require_admin, require_user
 from ..harness.manifests import TenantSpec
 
 router = APIRouter(prefix="/api")
@@ -52,18 +52,17 @@ def tenant_spec(t: Tenant) -> TenantSpec:
                       branding=t.branding or {}, settings=t.settings or {})
 
 
-def get_tenant(slug: str, st=Depends(state)) -> Tenant:
+def get_tenant(slug: str, st=Depends(state), authorization: str | None = Header(default=None)) -> Tenant:
     with st.sessions() as db:
         t = db.scalar(select(Tenant).where(Tenant.slug == slug, Tenant.active.is_(True)))
+        if not t:
+            # a signed-in salon whose tenant was lost in a free-tier restart gets it back
+            data = read_token((authorization or "").removeprefix("Bearer ").strip()) if authorization else None
+            if data and data.get("t") == slug:
+                t = ensure_tenant(db, slug, data.get("tn", ""))
     if not t:
         raise HTTPException(404, "Salon not found")
     return t
-
-
-def require_admin(x_admin_key: str | None = Header(default=None)) -> None:
-    expected = os.getenv("ADMIN_KEY")
-    if expected and x_admin_key != expected:
-        raise HTTPException(401, "Admin key required")
 
 
 def month_usage(db, tenant_id: str) -> int:
@@ -175,7 +174,8 @@ def tenant_public(t: Tenant = Depends(get_tenant), st=Depends(state)):
 # ------------------------------------------------------------------ consultations
 @router.post("/t/{slug}/consultations", status_code=202)
 async def start_consultation(body: ConsultationIn, background: BackgroundTasks, t: Tenant = Depends(get_tenant), st=Depends(state),
-                             user: str = Depends(require_user)):
+                             user: dict = Depends(require_user)):
+    check_tenant(user, t.slug)
     spec = tenant_spec(t)
     if "consultation" not in spec.workflows:
         raise HTTPException(403, "Consultations are not enabled for this salon")
@@ -275,7 +275,8 @@ def get_consultation(cid: str, t: Tenant = Depends(get_tenant), st=Depends(state
 
 @router.post("/t/{slug}/consultations/{cid}/choose")
 async def choose_style(cid: str, body: ChooseIn, t: Tenant = Depends(get_tenant), st=Depends(state),
-                       user: str = Depends(require_user)):
+                       user: dict = Depends(require_user)):
+    check_tenant(user, t.slug)
     with st.sessions() as db:
         c = db.scalar(select(Consultation).where(Consultation.id == cid, Consultation.tenant_id == t.id))
         if not c:

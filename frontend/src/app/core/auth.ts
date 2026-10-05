@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { API_BASE } from './config';
 
 const KEY = 'aaina.session';
-interface Session { token: string; name: string; }
+export interface Session { token: string; name: string; tenant: string; tenantName: string; }
 
 /** Free sign-in with a shared access code; the token is signed by the server and kept on this device. */
 @Injectable({ providedIn: 'root' })
@@ -13,18 +13,24 @@ export class Auth {
   private http = inject(HttpClient);
   readonly session = signal<Session | null>(read());
   readonly name = computed(() => this.session()?.name ?? null);
-  private status?: Promise<{ required: boolean; code: boolean }>;
+  readonly tenantName = computed(() => this.session()?.tenantName ?? null);
+  private required?: Promise<boolean>;
 
-  private getStatus() {
-    return (this.status ??= firstValueFrom(this.http.get<{ required: boolean; code?: boolean }>(`${API_BASE}/api/auth/status`))
-      .then(r => ({ required: r.required, code: !!r.code })).catch(() => ({ required: true, code: false })));   // if unsure, ask people to sign in
+  isRequired(): Promise<boolean> {
+    return (this.required ??= firstValueFrom(this.http.get<{ required: boolean }>(`${API_BASE}/api/auth/status`))
+      .then(r => r.required).catch(() => true));               // if unsure, ask people to sign in
   }
-  isRequired(): Promise<boolean> { return this.getStatus().then(s => s.required); }
-  needsCode(): Promise<boolean> { return this.getStatus().then(s => s.code); }
 
-  async login(name: string, email: string, code = ''): Promise<void> {
-    const r = await firstValueFrom(this.http.post<{ token: string; name: string }>(`${API_BASE}/api/auth/login`, { name, email, code }));
-    this.set({ token: r.token, name: r.name });
+  /** Sign in with the tenant key and username issued after approval. */
+  async login(tenantKey: string, username: string): Promise<void> {
+    const r = await firstValueFrom(this.http.post<{ token: string; name: string; tenant: string; tenant_name: string }>(
+      `${API_BASE}/api/auth/login`, { tenant_key: tenantKey, username }));
+    this.set({ token: r.token, name: r.name, tenant: r.tenant, tenantName: r.tenant_name });
+  }
+
+  /** A salon asks for access; the owner approves it and sends a tenant key + username. */
+  register(body: { business: string; owner: string; email: string; phone: string; city: string }) {
+    return firstValueFrom(this.http.post<{ id: string; status: string }>(`${API_BASE}/api/auth/register`, body));
   }
 
   logout() { this.set(null); }
@@ -41,7 +47,7 @@ export class Auth {
 }
 
 function read(): Session | null {
-  try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { return null; }
+  try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); return s?.tenant ? s : null; } catch { return null; }
 }
 
 /** Consultations spend AI credit, so they need a signed-in visitor (when the server asks for it). */

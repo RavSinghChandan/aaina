@@ -1,5 +1,5 @@
 import { Component, HostListener, OnInit, computed, inject, input, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Api } from '../core/api.service';
 import { Consultation, StyleOption } from '../core/models';
 
@@ -12,7 +12,7 @@ import { Consultation, StyleOption } from '../core/models';
         <span class="salon">Aaina</span>
         <div class="row">
           <button class="btn btn-sm ghost" (click)="fullscreen()">Full screen</button>
-          <a class="btn btn-sm ghost" [routerLink]="['/looks', id()]">Close</a>
+          <a class="btn btn-sm ghost" [routerLink]="['/looks', id()]" [queryParams]="{ t }">Close</a>
         </div>
       </header>
       <h1>{{ name() ? name() + ', which one feels like you?' : 'Which one feels like you?' }}</h1>
@@ -52,13 +52,14 @@ import { Consultation, StyleOption } from '../core/models';
 export class PresentPage implements OnInit {
   id = input.required<string>();
   private api = inject(Api);
+  readonly t = inject(ActivatedRoute).snapshot.queryParamMap.get('t');
   c = signal<Consultation | null>(null);
   focus = signal(0);
   options = computed<StyleOption[]>(() => this.c()?.outputs?.['recommendation']?.options ?? []);
   name = computed(() => this.c()?.customer?.name?.trim() || null);
 
   async ngOnInit() {
-    this.c.set(await this.api.consultation(this.id()));
+    this.c.set(await this.api.consultation(this.id(), this.t));
     const chosen = this.options().findIndex(o => o.style_id === this.c()?.chosen_style_id);
     if (chosen >= 0) this.focus.set(chosen);
   }

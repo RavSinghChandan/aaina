@@ -11,7 +11,7 @@ import { Auth } from '../core/auth';
         <a class="brand" routerLink="/" aria-label="Aaina home"><span class="brand-mark" aria-hidden="true">a</span><span>Aaina</span></a>
         <div class="tb-right">
           @if (auth.name(); as n) {
-            <span class="tb-user">Hi, {{ n }}</span>
+            <span class="tb-user">{{ auth.tenantName() }} · {{ n }}</span>
             <button type="button" class="btn btn-ghost btn-sm" (click)="signOut()">Sign out</button>
           }
           @if (action(); as a) { <a class="btn btn-ghost btn-sm" [routerLink]="a.link">{{ a.label }}</a> }

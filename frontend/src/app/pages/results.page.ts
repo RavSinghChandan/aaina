@@ -1,5 +1,5 @@
 import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Api } from '../core/api.service';
 import { PhotoSession } from '../core/photo-session';
 import { Consultation, Meta, StyleOption } from '../core/models';
@@ -24,7 +24,7 @@ import { TopBar } from '../shared/top-bar';
             </div>
           </div>
           <div class="row">
-            <a class="btn btn-ghost btn-sm" [routerLink]="['/looks', id(), 'screen']">Big screen</a>
+            <a class="btn btn-ghost btn-sm" [routerLink]="['/looks', id(), 'screen']" [queryParams]="{ t }">Big screen</a>
             <a class="btn btn-ghost btn-sm" [href]="whatsappLink()" target="_blank" rel="noopener">Send on WhatsApp</a>
           </div>
         </header>
@@ -126,6 +126,7 @@ import { TopBar } from '../shared/top-bar';
 export class ResultsPage implements OnInit {
   id = input.required<string>();
   private api = inject(Api);
+  readonly t = inject(ActivatedRoute).snapshot.queryParamMap.get('t');
   session = inject(PhotoSession);
   name = computed(() => this.c()?.customer?.name?.trim() || null);
   youTags = computed(() => {
@@ -183,7 +184,7 @@ export class ResultsPage implements OnInit {
 
   async ngOnInit() {
     try {
-      const [c, meta] = await Promise.all([this.api.consultation(this.id()), this.api.meta()]);
+      const [c, meta] = await Promise.all([this.api.consultation(this.id(), this.t), this.api.meta()]);
       this.c.set(c); this.meta.set(meta);
     } catch { this.error.set('We could not find these looks. They may have been removed.'); }
   }
@@ -198,7 +199,7 @@ export class ResultsPage implements OnInit {
 
   async choose(o: StyleOption) {
     this.choosing.set(true);
-    try { this.c.set(await this.api.choose(this.id(), o.style_id)); this.tab.set('calendar'); }
+    try { this.c.set(await this.api.choose(this.id(), o.style_id, this.t)); this.tab.set('calendar'); }
     finally { this.choosing.set(false); }
   }
 }

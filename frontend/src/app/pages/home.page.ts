@@ -19,7 +19,7 @@ import { TopBar } from '../shared/top-bar';
           <h1>Find the haircut that truly suits <em>you</em>.</h1>
           <p class="lead muted">{{ steps().length }} simple steps around one chakra. About two minutes. You see every step as it fills in.</p>
           <a class="btn btn-brand go" routerLink="/start">Start my consultation</a>
-          <p class="muted small">No sign-up. Your photo is measured on your phone and never saved.</p>
+          <p class="muted small">For salons: <a routerLink="/register">register your salon</a> or <a routerLink="/login">sign in</a> with your tenant key. Photos are measured on the phone and never saved.</p>
         </div>
         <chakra class="wheel" [steps]="steps()" [current]="-1" [hubText]="{ big: '' + steps().length, small: 'steps' }" />
       </section>

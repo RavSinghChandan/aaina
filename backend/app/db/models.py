@@ -21,6 +21,22 @@ class Base(DeclarativeBase):
     pass
 
 
+class Registration(Base):
+    """A salon asking to use Aaina. Approval creates its tenant and issues a tenant key + username."""
+    __tablename__ = "registrations"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    business: Mapped[str] = mapped_column(String(120))
+    owner: Mapped[str] = mapped_column(String(60))
+    email: Mapped[str] = mapped_column(String(160), index=True, default="")
+    phone: Mapped[str] = mapped_column(String(20), default="")
+    city: Mapped[str] = mapped_column(String(60), default="")
+    status: Mapped[str] = mapped_column(String(12), default="pending")      # pending | approved | rejected | revoked
+    tenant_slug: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    username: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    decided_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class Tenant(Base):
     __tablename__ = "tenants"
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)

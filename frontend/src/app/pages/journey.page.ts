@@ -424,7 +424,7 @@ export class JourneyPage implements OnInit, OnDestroy {
       this.stepStates.set(c.steps);
       if (c.status === 'done') {
         this.running.set(false); this.finished.set(true);
-        this.pollTimer = setTimeout(() => this.router.navigate(['/looks', id]), 1300);
+        this.pollTimer = setTimeout(() => this.router.navigate(['/looks', id], { queryParams: { t: this.api.tenant() } }), 1300);
         return;
       }
       if (c.status === 'failed') { this.running.set(false); this.error.set('Something went wrong while preparing your looks.'); return; }
