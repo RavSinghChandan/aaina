@@ -4,6 +4,7 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { firstValueFrom } from 'rxjs';
 import { API_BASE } from '../core/config';
 import { TopBar } from '../shared/top-bar';
+import { I18n } from '../core/i18n';
 
 interface Reg {
   id: string; business: string; owner: string; email: string; phone: string; city: string;
@@ -16,7 +17,7 @@ const KEY = 'aaina.admin';
   selector: 'admin-page',
   imports: [FormsModule, TopBar],
   template: `
-    <top-bar />
+    <top-bar [hideTabs]="true" />
     <main class="wrap page stack">
       <header><p class="eyebrow">Owner</p><h1 class="lt">Salon access</h1></header>
 
@@ -45,6 +46,14 @@ const KEY = 'aaina.admin';
             </div>
           </section>
         }
+
+        <section class="card stack">
+          <label class="field"><span class="label">Language for sign-in links</span>
+            <select class="input" [(ngModel)]="linkLang" name="ll">
+              @for (l of i18n.available(); track l.code) { <option [value]="l.code">{{ l.native }} · {{ l.english }}</option> }
+            </select></label>
+          <p class="muted small">A salon opening its link sees Aaina in this language, and its customers' advice is written in it. They can change it any time.</p>
+        </section>
 
         <section class="stack">
           <h2>Waiting for approval <span class="pill">{{ pending().length }}</span></h2>
@@ -109,6 +118,8 @@ const KEY = 'aaina.admin';
 })
 export class AdminPage {
   private http = inject(HttpClient);
+  readonly i18n = inject(I18n);
+  linkLang = 'en';
   adminKey = read();
   unlocked = signal(false);
   rows = signal<Reg[]>([]);
@@ -160,7 +171,7 @@ export class AdminPage {
 
   /** One-click sign-in: the key sits after #, so it is never sent to a server. */
   link(k: { tenant_key: string | null; username: string | null }) {
-    return `${location.origin}/login#k=${encodeURIComponent(k.tenant_key || '')}&u=${encodeURIComponent(k.username || '')}`;
+    return `${location.origin}/login#k=${encodeURIComponent(k.tenant_key || '')}&u=${encodeURIComponent(k.username || '')}&l=${this.linkLang}`;
   }
   message(k: { owner: string; business: string; tenant_key: string | null; username: string | null }) {
     return `Hi ${k.owner}, your salon ${k.business} is ready on Aaina.\n\nOne-click sign-in: ${this.link(k)}\n\nOr sign in at ${location.origin}/login with\nTenant key: ${k.tenant_key}\nUsername: ${k.username}`;

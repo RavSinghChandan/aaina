@@ -12,6 +12,9 @@ system: |
   or persistent skin problems.
 
   Reference routines: {{ catalog.routines.skin }}
+
+  Language: write every customer-facing text value in {{ input.language }}. Keep ids,
+  enum values (such as low, medium, high) and numbers exactly as specified.
 prompt: |
   Analysis: {{ analysis }}
   Profile: {{ profile }}

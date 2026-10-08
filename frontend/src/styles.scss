@@ -121,3 +121,7 @@ p { margin: 0 0 .75rem; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* Indian scripts: letter-spacing and capitals break the shaping of joined letters */
+html:not([lang='en']) .eyebrow { letter-spacing: 0; text-transform: none; }
+html:not([lang='en']) h1, html:not([lang='en']) h2 { letter-spacing: 0; }

@@ -1,12 +1,18 @@
 import { IntakeForm } from './models';
 import { ChakraStep } from '../shared/chakra';
 
-/** Every step on the wheel. The question steps come from the form manifest, so a new section adds a spoke. */
-export function journeySteps(form: IntakeForm | null): (ChakraStep & { hint: string })[] {
+type T = (key: string, params?: Record<string, string | number> | null, fallback?: string) => string;
+
+/**
+ * Every step on the wheel. The quick path is hello, photo, three taps, reveal;
+ * the `more` sections of the form join only when someone asks for more detail.
+ */
+export function journeySteps(form: IntakeForm | null, t: T, withMore: boolean): (ChakraStep & { hint: string })[] {
+  const sections = (form?.sections ?? []).filter(s => !s.more || withMore);
   return [
-    { id: 'hello', label: 'Hello', hint: 'How it works, and your say over your photo' },
-    { id: 'photo', label: 'Your photo', hint: 'One selfie. We measure your face shape on your phone' },
-    ...(form?.sections ?? []).map(s => ({ id: s.id, label: s.title, hint: s.fields.slice(0, 3).map(f => f.label.replace(/[?…]/g, '')).join(' · ') })),
-    { id: 'reveal', label: 'Reveal', hint: 'Spin the chakra. AI agents pick 3 cuts, routines and a calendar' },
+    { id: 'hello', label: t('step.hello'), hint: t('step.helloHint') },
+    { id: 'photo', label: t('step.photo'), hint: t('step.photoHint') },
+    ...sections.map(s => ({ id: s.id, label: t(`section.${s.id}`, null, s.title), hint: t(`section.${s.id}.hint`, null, '') })),
+    { id: 'reveal', label: t('step.reveal'), hint: t('step.revealHint') },
   ];
 }

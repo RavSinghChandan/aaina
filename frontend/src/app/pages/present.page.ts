@@ -1,3 +1,4 @@
+import { I18n } from '../core/i18n';
 import { Component, HostListener, OnInit, computed, inject, input, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Api } from '../core/api.service';
@@ -11,23 +12,23 @@ import { Consultation, StyleOption } from '../core/models';
       <header class="bar">
         <span class="salon">Aaina</span>
         <div class="row">
-          <button class="btn btn-sm ghost" (click)="fullscreen()">Full screen</button>
-          <a class="btn btn-sm ghost" [routerLink]="['/looks', id()]" [queryParams]="{ t }">Close</a>
+          <button class="btn btn-sm ghost" (click)="fullscreen()">{{ tr()('present.full') }}</button>
+          <a class="btn btn-sm ghost" [routerLink]="['/looks', id()]" [queryParams]="{ t }">{{ tr()('present.close') }}</a>
         </div>
       </header>
-      <h1>{{ name() ? name() + ', which one feels like you?' : 'Which one feels like you?' }}</h1>
+      <h1>{{ name() ? tr()('present.titleName', { name: name()! }) : tr()('present.title') }}</h1>
       <div class="three">
         @for (o of options(); track o.style_id; let i = $index) {
           <button class="opt" [class.on]="focus() === i" (click)="focus.set(i)" [attr.aria-pressed]="focus() === i">
             @if (preview(o.style_id); as src) { <img [src]="src" [alt]="o.name" /> }
             <span class="num">{{ i + 1 }}</span>
             <span class="nm">{{ o.name }}</span>
-            <span class="sc">{{ o.match_score }}% match</span>
+            <span class="sc">{{ tr()('results.match', { n: o.match_score }) }}</span>
           </button>
         }
       </div>
       @if (options()[focus()]; as o) { <p class="why">{{ o.why }}</p> }
-      <p class="hint">Use ← → or tap a look</p>
+      <p class="hint">{{ tr()('present.hint') }}</p>
     </div>
   `,
   styles: [`
@@ -50,6 +51,7 @@ import { Consultation, StyleOption } from '../core/models';
   `],
 })
 export class PresentPage implements OnInit {
+  readonly tr = inject(I18n).t;
   id = input.required<string>();
   private api = inject(Api);
   readonly t = inject(ActivatedRoute).snapshot.queryParamMap.get('t');

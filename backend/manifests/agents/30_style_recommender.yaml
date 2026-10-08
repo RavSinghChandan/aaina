@@ -29,6 +29,9 @@ system: |
   - watch_out: at most 12 words
   - how_to_ask: precise notes for the stylist, at most 25 words
   - styling_tip: at most 14 words
+
+  Language: write every customer-facing text value in {{ input.language }}. Keep ids,
+  enum values (such as low, medium, high) and numbers exactly as specified.
 prompt: |
   Face and hair analysis: {{ analysis }}
   Customer profile: {{ profile }}

@@ -39,6 +39,24 @@ _TYPES = {
 }
 
 
+def coerce(value: Any, schema: dict[str, Any]) -> Any:
+    """Turn a whole-number float into an int where the schema asks for an integer.
+
+    Models often write 92.0 for 92; that is the same value, not a broken answer.
+    Nothing else changes: a real fraction such as 92.5 still fails validation.
+    """
+    t = schema.get("type")
+    types = t if isinstance(t, list) else [t]
+    if "integer" in types and isinstance(value, float) and value.is_integer():
+        return int(value)
+    if isinstance(value, dict):
+        props = schema.get("properties", {})
+        return {k: coerce(v, props[k]) if k in props else v for k, v in value.items()}
+    if isinstance(value, list) and "items" in schema:
+        return [coerce(v, schema["items"]) for v in value]
+    return value
+
+
 def validate(value: Any, schema: dict[str, Any], path: str = "$") -> list[str]:
     """Return a list of problems; empty means valid. Covers the subset we use."""
     errs: list[str] = []

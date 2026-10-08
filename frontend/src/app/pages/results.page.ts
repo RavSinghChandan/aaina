@@ -7,32 +7,34 @@ import { OutputView } from '../shared/output-view';
 import { Chakra } from '../shared/chakra';
 import { journeySteps } from '../core/journey';
 import { TopBar } from '../shared/top-bar';
+import { I18n } from '../core/i18n';
+import { Auth } from '../core/auth';
 
 @Component({
   selector: 'results-page',
   imports: [RouterLink, TopBar, OutputView, Chakra],
   template: `
-    <top-bar [action]="{ label: 'Start again', link: '/start' }" />
+    <top-bar />
     <main class="wrap page stack">
       @if (c(); as c) {
         <header class="spread">
           <div class="done-row">
-            <chakra class="done-wheel" [steps]="steps()" [current]="steps().length" [finished]="true" [hubText]="{ big: '✓', small: '' }" />
+            <chakra class="done-wheel" [steps]="steps()" [current]="steps().length" [finished]="true" [hubText]="{ big: '✓', small: '' }" data-noread />
             <div>
-            <p class="eyebrow">All {{ steps().length }} steps done</p>
-            <h2>{{ name() ? name() + ', here are your looks' : 'Your three looks' }}</h2>
+            <p class="eyebrow">{{ tr()('results.done') }}</p>
+            <h2>{{ name() ? tr()('results.titleName', { name: name()! }) : tr()('results.title') }}</h2>
             </div>
           </div>
           <div class="row">
-            <a class="btn btn-ghost btn-sm" [routerLink]="['/looks', id(), 'screen']" [queryParams]="{ t }">Big screen</a>
-            <a class="btn btn-ghost btn-sm" [href]="whatsappLink()" target="_blank" rel="noopener">Send on WhatsApp</a>
+            <a class="btn btn-ghost btn-sm" [routerLink]="['/looks', id(), 'screen']" [queryParams]="{ t }" data-noread>📺 {{ tr()('results.bigScreen') }}</a>
+            <a class="btn btn-brand btn-sm" [href]="whatsappLink()" target="_blank" rel="noopener" data-noread>💬 {{ tr()('results.whatsapp') }}</a>
           </div>
         </header>
 
         <div class="you card flat">
           @if (session.photo(); as ph) { <img class="you-ph" [src]="ph" alt="You today" /> }
           <div>
-            <p class="eyebrow">{{ session.photo() ? 'You today' : 'About you' }}</p>
+            <p class="eyebrow">{{ tr()(session.photo() ? 'results.youToday' : 'results.aboutYou') }}</p>
             <div class="chips">@for (t of youTags(); track t) { <span class="pill">{{ t }}</span> }</div>
             @if (rec()?.summary; as sum) { <p class="sum">{{ sum }}</p> }
           </div>
@@ -42,37 +44,40 @@ import { TopBar } from '../shared/top-bar';
             <article class="look card" [class.chosen]="chosen() === o.style_id">
               <div class="pv" [class.photo]="kind(o.style_id) === 'photo'">
                 @if (preview(o.style_id); as src) {
-                  <img [src]="src" [alt]="kind(o.style_id) === 'photo' ? 'You with a ' + o.name : 'Drawing of ' + o.name" loading="lazy" />
+                  <img [src]="src" [alt]="o.name" loading="lazy" />
                 }
-                @if (kind(o.style_id) === 'photo') { <span class="onyou">On your photo</span> }
-                <span class="rank">{{ i === 0 ? 'Best match' : '#' + (i + 1) }}</span>
-                <span class="score" [attr.aria-label]="o.match_score + ' percent match'">{{ o.match_score }}%</span>
+                @if (kind(o.style_id) === 'photo') { <span class="onyou">{{ tr()('results.onYou') }}</span> }
+                <span class="rank">{{ i === 0 ? tr()('results.best') : '#' + (i + 1) }}</span>
+                <span class="score" [attr.aria-label]="tr()('results.match', { n: o.match_score })">{{ o.match_score }}%</span>
               </div>
               <div class="body stack">
                 <h3>{{ o.name }}</h3>
                 <p class="why">{{ o.why }}</p>
                 <div class="chips">@for (s of o.suits; track s) { <span class="pill brand">{{ s }}</span> }</div>
                 <dl class="meta">
-                  <div><dt>Upkeep</dt><dd>{{ o.maintenance }}</dd></div>
-                  <div><dt>Trim every</dt><dd>{{ o.trim_weeks }} wks</dd></div>
-                  <div><dt>Styling</dt><dd>{{ o.styling_minutes }} min</dd></div>
+                  <div><dt>{{ tr()('results.upkeep') }}</dt><dd>{{ tr()('level.' + o.maintenance, null, o.maintenance) }}</dd></div>
+                  <div><dt>{{ tr()('results.trimEvery') }}</dt><dd>{{ tr()('results.weeks', { n: o.trim_weeks }) }}</dd></div>
+                  <div><dt>{{ tr()('results.styling') }}</dt><dd>{{ tr()('results.minutes', { n: o.styling_minutes }) }}</dd></div>
                 </dl>
-                @if (o.watch_out) { <p class="watch small"><strong>Keep in mind:</strong> {{ o.watch_out }}</p> }
+                @if (o.watch_out) { <p class="watch small"><strong>{{ tr()('results.keepInMind') }}</strong> {{ o.watch_out }}</p> }
                 <details class="stylist">
-                  <summary>For your stylist</summary>
-                  <p><strong>How to cut:</strong> {{ o.how_to_ask }}</p>
-                  @if (o.styling_tip) { <p class="muted small"><strong>Styling at home:</strong> {{ o.styling_tip }}</p> }
+                  <summary>✂️ {{ tr()('results.forStylist') }}</summary>
+                  <p><strong>{{ tr()('results.howToCut') }}</strong> {{ o.how_to_ask }}</p>
+                  @if (o.styling_tip) { <p class="muted small"><strong>{{ tr()('results.atHome') }}</strong> {{ o.styling_tip }}</p> }
                 </details>
                 <button class="btn btn-block" [class.btn-primary]="chosen() !== o.style_id" [class.btn-brand]="chosen() === o.style_id"
-                        [disabled]="choosing()" (click)="choose(o)">{{ chosen() === o.style_id ? '✓ Chosen' : 'Choose this look' }}</button>
+                        [disabled]="choosing()" (click)="choose(o)">{{ chosen() === o.style_id ? '✓ ' + tr()('results.chosen') : tr()('results.choose') }}</button>
               </div>
             </article>
           }
         </section>
 
-        <nav class="tabs" role="tablist" aria-label="More for you">
+        @if (reminderLink(); as rl) {
+          <a class="btn btn-ghost btn-block remind" [href]="rl" target="_blank" rel="noopener" data-noread>📅 {{ tr()('results.remindTrim', { date: nextTrim() }) }}</a>
+        }
+        <nav class="tabs" role="tablist" [attr.aria-label]="tr()('results.more')" data-noread>
           @for (t of tabs(); track t.step) {
-            <button role="tab" class="tab" [class.on]="tab() === t.step" [attr.aria-selected]="tab() === t.step" (click)="tab.set(t.step)">{{ t.title }}</button>
+            <button role="tab" class="tab" [class.on]="tab() === t.step" [attr.aria-selected]="tab() === t.step" (click)="tab.set(t.step)">{{ tr()('tab.' + t.step, null, t.title) }}</button>
           }
         </nav>
         @if (currentTab(); as t) {
@@ -80,10 +85,10 @@ import { TopBar } from '../shared/top-bar';
             <output-view [view]="t.view" [data]="c.outputs[t.step]" />
           </section>
         }
-        <p class="muted small center">Grooming guidance, not medical advice. {{ aiNote() }}</p>
-        <div class="center"><a class="btn btn-ghost" routerLink="/start">Start a new consultation</a></div>
+        <p class="muted small center">{{ tr()('common.notMedical') }} {{ tr()(aiNote()) }}</p>
+        <div class="center"><a class="btn btn-brand" routerLink="/start" data-noread>✂️ {{ tr()('home.newCustomer') }}</a></div>
       } @else if (error()) {
-        <div class="card center"><h2>Not found</h2><p class="muted">{{ error() }}</p></div>
+        <div class="card center"><h2>{{ tr()('results.notFound') }}</h2><p class="muted">{{ tr()('results.notFoundHint') }}</p></div>
       } @else { <div class="skeleton" style="height:420px"></div> }
     </main>
   `,
@@ -121,24 +126,24 @@ import { TopBar } from '../shared/top-bar';
     .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
     .tab { flex: none; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1.5px solid var(--line); background: #fff; font-weight: 700; color: var(--ink-2); cursor: pointer; }
     .tab.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .remind { min-height: 56px; }
   `],
 })
 export class ResultsPage implements OnInit {
   id = input.required<string>();
   private api = inject(Api);
+  private auth = inject(Auth);
+  readonly tr = inject(I18n).t;
   readonly t = inject(ActivatedRoute).snapshot.queryParamMap.get('t');
   session = inject(PhotoSession);
   name = computed(() => this.c()?.customer?.name?.trim() || null);
   youTags = computed(() => {
-    const a = this.c()?.outputs?.['analysis'];
+    const a = this.c()?.outputs?.['analysis'], tr = this.tr();
     if (!a) return [];
-    const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
-    const colour = (a.features ?? []).find((f: string) => / hair \(from your photo\)$/.test(f))?.replace(' (from your photo)', '');
     return [
-      a.face_shape && `${cap(a.face_shape === 'oblong' ? 'long' : a.face_shape)} face`,
-      colour,
-      a.hair?.length && `${cap(a.hair.length)} length`,
-      a.beard?.present && 'Beard',
+      a.face_shape && tr('journey.faceShape', { shape: tr('form.self_report.face_shape.' + a.face_shape, null, a.face_shape) }),
+      a.hair?.length && tr('form.hair_length_now.' + a.hair.length, null, a.hair.length),
+      a.beard?.present && tr('journey.beard'),
     ].filter(Boolean) as string[];
   });
 
@@ -149,7 +154,7 @@ export class ResultsPage implements OnInit {
   tab = signal<string>('');
   steps = computed(() => {
     const m = this.meta();
-    return journeySteps(m?.forms['intake'] ?? null);
+    return journeySteps(m?.forms['intake'] ?? null, this.tr(), false);
   });
 
   rec = computed(() => this.c()?.outputs?.['recommendation']);
@@ -170,23 +175,33 @@ export class ResultsPage implements OnInit {
     const steps = this.c()?.steps ?? {};
     const ai = ['recommendation', 'hair_care'].some(k => !['offline', 'offline-fallback', undefined].includes(steps[k]?.source as any));
     const photo = steps['analysis']?.source && !['offline', 'offline-fallback'].includes(steps['analysis'].source!);
-    return photo ? 'Photo and recommendations by AI.' : ai ? 'Recommendations by AI, based on your answers.' : 'Based on your answers.';
+    return photo ? 'results.aiPhoto' : ai ? 'results.aiAnswers' : 'results.rules';
   });
+  nextTrim = computed(() => this.c()?.outputs?.['calendar']?.events?.find((e: any) => e.kind === 'trim')?.date ?? null);
   whatsappLink = computed(() => {
-    const o = this.options(); const cal = this.c()?.outputs?.['calendar'];
+    const o = this.options(), tr = this.tr();
     const pick = o.find(x => x.style_id === this.chosen()) ?? o[0];
-    const next = cal?.events?.find((e: any) => e.kind === 'trim');
-    const text = `My Aaina looks:\n` +
-      o.map((x, i) => `${i + 1}. ${x.name} (${x.match_score}% match)`).join('\n') +
-      (pick ? `\n\nChosen: ${pick.name}` : '') + (next ? `\nNext trim: ${next.date}` : '');
-    return `https://wa.me/?text=${encodeURIComponent(text)}`;
+    const text = tr('share.title', { salon: this.auth.tenantName() || 'Aaina' }) + '\n' +
+      o.map((x, i) => `${i + 1}. ${x.name} (${x.match_score}%)`).join('\n') +
+      (pick ? '\n\n' + tr('share.chosen', { name: pick.name }) : '') + (this.nextTrim() ? '\n' + tr('share.nextTrim', { date: this.nextTrim()! }) : '');
+    return `https://wa.me/${this.phoneDigits()}?text=${encodeURIComponent(text)}`;
   });
+  /** A ready reminder for the next trim, sent from the salon's phone to the customer's. */
+  reminderLink = computed(() => {
+    const phone = this.phoneDigits(), date = this.nextTrim();
+    if (!phone || !date) return null;
+    const text = this.tr()('follow.message', { name: this.name() || '', what: this.tr()('kind.trim') + ' (' + date + ')', salon: this.auth.tenantName() || 'Aaina' });
+    return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+  });
+  private phone = signal<string | null>(null);
+  phoneDigits = computed(() => { const d = (this.phone() ?? '').replace(/\D/g, ''); return d.length === 10 ? '91' + d : d; });
 
   async ngOnInit() {
     try {
       const [c, meta] = await Promise.all([this.api.consultation(this.id(), this.t), this.api.meta()]);
       this.c.set(c); this.meta.set(meta);
-    } catch { this.error.set('We could not find these looks. They may have been removed.'); }
+      if (this.auth.session() && c.customer?.id) this.api.customer(c.customer.id).then(d => this.phone.set(d.phone)).catch(() => {});
+    } catch { this.error.set('not-found'); }
   }
 
   kind(styleId: string): string {

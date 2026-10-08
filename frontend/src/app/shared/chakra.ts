@@ -95,7 +95,7 @@ export class Chakra {
     });
   });
   hubBig = computed(() => this.hubText()?.big ?? `${Math.min(this.current() + 1, this.steps().length)}`);
-  hubSmall = computed(() => this.hubText()?.small ?? `of ${this.steps().length}`);
+  hubSmall = computed(() => this.hubText()?.small ?? `/ ${this.steps().length}`);
   aria = computed(() => {
     const s = this.steps()[this.current()];
     return `Step ${this.current() + 1} of ${this.steps().length}${s ? ': ' + s.label : ''}`;

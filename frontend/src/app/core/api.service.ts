@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { API_BASE, SPACE } from './config';
-import { Consultation, Meta } from './models';
+import { AgendaItem, Consultation, CustomerDetail, CustomerRow, Meta } from './models';
 import { Auth } from './auth';
 
 @Injectable({ providedIn: 'root' })
@@ -24,6 +24,17 @@ export class Api {
   }
   choose(id: string, styleId: string, tenant?: string | null) {
     return this.signedOut401(firstValueFrom(this.http.post<Consultation>(this.url(`/t/${this.tenant(tenant)}/consultations/${id}/choose`), { style_id: styleId }, { headers: this.auth.headers() })));
+  }
+
+  customers(q = '') {
+    const qs = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
+    return this.signedOut401(firstValueFrom(this.http.get<CustomerRow[]>(this.url(`/t/${this.tenant()}/customers${qs}`), { headers: this.auth.headers() })));
+  }
+  customer(id: string) {
+    return this.signedOut401(firstValueFrom(this.http.get<CustomerDetail>(this.url(`/t/${this.tenant()}/customers/${id}`), { headers: this.auth.headers() })));
+  }
+  agenda(days = 14) {
+    return this.signedOut401(firstValueFrom(this.http.get<AgendaItem[]>(this.url(`/t/${this.tenant()}/agenda?days=${days}`), { headers: this.auth.headers() })));
   }
 
   /** An expired or missing sign-in clears the stored session so the app can ask again. */

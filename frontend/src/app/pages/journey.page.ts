@@ -11,27 +11,27 @@ import { FormSection, IntakeForm, StepState } from '../core/models';
 import { Chakra } from '../shared/chakra';
 import { QuestionField } from '../shared/question-field';
 import { TopBar } from '../shared/top-bar';
+import { I18n } from '../core/i18n';
 
-const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', square: 'Square', heart: 'Heart', oblong: 'Long', diamond: 'Diamond' };
 
 @Component({
   selector: 'journey-page',
   imports: [FormsModule, TitleCasePipe, QuestionField, Chakra, TopBar],
   template: `
-    <top-bar />
+    <top-bar [hideTabs]="true" />
     <main class="wrap page layout" [class.revealing]="isReveal()">
       <!-- the wheel: compact header on phones, a sticky side panel on big screens -->
-      <aside class="side">
+      <aside class="side" data-noread>
         <div class="mini">
           <chakra class="wheel" [steps]="steps()" [current]="idx()" [spinning]="running()" [finished]="finished()"
                   [beads]="isReveal() ? beads() : []" [hubText]="hub()" (pick)="go($event)" />
           <div class="where">
-            <p class="eyebrow">Step {{ idx() + 1 }} of {{ steps().length }}</p>
+            <p class="eyebrow">{{ t()('journey.stepOf', { n: idx() + 1, total: steps().length }) }}</p>
             <h2 class="title">{{ step()?.label }}</h2>
-            @if (steps()[idx() + 1]; as n) { <p class="muted small">Next: {{ n.label }}</p> }
+            @if (steps()[idx() + 1]; as n) { <p class="muted small">{{ t()('journey.next', { step: n.label }) }}</p> }
           </div>
         </div>
-        <ol class="steplist" aria-label="All steps">
+        <ol class="steplist" [attr.aria-label]="t()('journey.allSteps')">
           @for (s of steps(); track s.id; let i = $index) {
             <li [class.done]="i < idx() || finished()" [class.now]="i === idx() && !finished()">
               <button type="button" [disabled]="i >= idx() || running()" (click)="go(i)">
@@ -46,21 +46,16 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
         @switch (step()?.id) {
           @case ('hello') {
             <div class="stack">
-              <h1 class="hello">Let's find the haircut that suits <em>you</em>.</h1>
-              <p class="lead muted">Walk around the chakra one step at a time. Each step you finish fills in. At the end you spin it, and our AI agents put together your looks.</p>
+              <h1 class="hello">{{ t()('journey.helloTitle') }}</h1>
               <ul class="how">
-                <li><span>📷</span><div><strong>One selfie</strong><p class="muted small">We measure your face shape on this phone.</p></div></li>
-                <li><span>💬</span><div><strong>A few quick taps</strong><p class="muted small">Your work, lifestyle, taste, hair and skin.</p></div></li>
-                <li><span>✨</span><div><strong>Your top three cuts{{ tryOn() ? ', on your own photo' : '' }}</strong><p class="muted small">With hair and face routines and a care calendar.</p></div></li>
+                <li><span>📷</span><div><strong>{{ t()('how.photo') }}</strong><p class="muted small">{{ t()('how.photoHint') }}</p></div></li>
+                <li><span>👆</span><div><strong>{{ t()('how.taps') }}</strong><p class="muted small">{{ t()('how.tapsHint') }}</p></div></li>
+                <li><span>✨</span><div><strong>{{ t()('how.looks') }}</strong><p class="muted small">{{ t()('how.looksHint') }}</p></div></li>
               </ul>
               <label class="check">
                 <input type="checkbox" [(ngModel)]="consent" />
-                <span><strong>Use my photo for this consultation.</strong><br />
-                  @if (tryOn()) {
-                    <span class="muted small">Your face shape is measured on this phone. To show the three cuts on you, the photo is edited by an AI model running on this computer. It is never sent to any outside service. The three pictures stay with your results. You can skip the photo.</span>
-                  } @else {
-                    <span class="muted small">It is used only now and never saved. You can skip the photo.</span>
-                  }
+                <span><strong>{{ t()('journey.consent') }}</strong><br />
+                  <span class="muted small">{{ t()(tryOn() ? 'journey.consentTryOn' : 'journey.consentHint') }}</span>
                 </span>
               </label>
             </div>
@@ -69,14 +64,14 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
             <div class="stack">
               @if (!consent) {
                 <div class="card flat stack">
-                  <p><strong>You chose not to use a photo.</strong> That is fine. We will go by your answers.</p>
-                  <label class="check"><input type="checkbox" [(ngModel)]="consent" /> <span>Actually, use my photo for this consultation.</span></label>
+                  <p><strong>{{ t()('journey.noPhoto') }}</strong></p>
+                  <label class="check"><input type="checkbox" [(ngModel)]="consent" /> <span>{{ t()('journey.usePhotoAfterAll') }}</span></label>
                 </div>
               } @else {
-                <p class="muted">Face the camera in good light, with your hair as it usually is.</p>
+                <p class="muted">{{ t()('journey.photoTip') }}</p>
                 @if (photo(); as src) {
-                  <figure class="measured" [style.aspect-ratio]="ratio()" [style.max-width]="maxW()">
-                    <img [src]="src" alt="Your photo" (load)="onImg($event)" />
+                  <figure class="measured" [style.aspect-ratio]="ratio()" [style.max-width]="maxW()" data-noread>
+                    <img [src]="src" alt="" (load)="onImg($event)" />
                     @if (measure(); as m) {
                       <svg [attr.viewBox]="'0 0 ' + m.width + ' ' + m.height" preserveAspectRatio="none" aria-hidden="true">
                         @for (l of m.lines; track l.id) {
@@ -88,58 +83,55 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
                     }
                     @if (measuring()) { <div class="scan" aria-hidden="true"></div> }
                   </figure>
-                  @if (measuring()) { <p class="center muted" role="status">Measuring your face…</p> }
+                  @if (measuring()) { <p class="center muted" role="status">{{ t()('journey.measuring') }}</p> }
                   @if (measure(); as m) {
                     <div class="result card flat" role="status">
                       <div class="spread">
-                        <div><p class="eyebrow">Measured on your phone</p><h3 class="shape">{{ shapeLabel(m.face_shape) }} face</h3></div>
-                        <span class="pill brand">{{ (m.confidence * 100).toFixed(0) }}% sure</span>
+                        <div><p class="eyebrow">{{ t()('journey.measuredOnPhone') }}</p><h3 class="shape">{{ t()('journey.faceShape', { shape: shapeLabel(m.face_shape) }) }}</h3></div>
+                        <span class="pill brand">{{ t()('journey.sure', { n: (m.confidence * 100).toFixed(0) }) }}</span>
                       </div>
-                      <ul class="legend small">
-                        <li><i class="k length"></i>Length</li><li><i class="k forehead"></i>Forehead</li><li><i class="k cheek"></i>Cheekbones</li><li><i class="k jaw"></i>Jaw</li>
-                      </ul>
                       @if (m.hair || m.beard) {
                         <div class="chips found">
-                          @if (m.hair) { <span class="pill"><i class="sw" [style.background]="'rgb(' + m.hair.rgb.join(',') + ')'"></i>{{ m.hair.color }} hair</span><span class="pill">{{ m.hair.length | titlecase }} length</span> }
-                          @if (m.beard) { <span class="pill">Beard</span> }
+                          @if (m.hair) { <span class="pill"><i class="sw" [style.background]="'rgb(' + m.hair.rgb.join(',') + ')'"></i>{{ t()('form.hair_length_now.' + m.hair.length, null, m.hair.length) }}</span> }
+                          @if (m.beard) { <span class="pill">{{ t()('journey.beard') }}</span> }
                         </div>
                       }
-                      <p class="muted small">{{ m.notes.slice(0, 2).join(' · ') }}.@if (m.quality !== 'good') { Better light and a straight-on angle will make it more accurate.}</p>
+                      @if (m.quality !== 'good') { <p class="muted small">{{ t()('journey.betterLight') }}</p> }
                     </div>
                   }
-                  @if (measureError()) { <p class="err" role="alert">{{ measureError() }}</p> }
+                  @if (measureError()) { <p class="err" role="alert">{{ t()('journey.measureFail') }}</p> }
                 } @else {
-                  <div class="camera">
+                  <div class="camera" data-noread>
                     @if (camOn()) { <video #video autoplay playsinline muted></video><div class="guide" aria-hidden="true"></div> }
-                    @else { <div class="placeholder"><span aria-hidden="true">📷</span><p class="small">{{ camError() || 'Your camera preview appears here' }}</p></div> }
+                    @else { <div class="placeholder"><span aria-hidden="true">📷</span><p class="small">{{ camError() ? t()('journey.noCamera') : t()('journey.cameraHere') }}</p></div> }
                   </div>
                 }
-                <div class="row">
-                  @if (photo()) { <button type="button" class="btn btn-ghost" (click)="retake()">Take another</button> }
-                  @else if (camOn()) { <button type="button" class="btn btn-primary" (click)="capture()">Take photo</button> }
-                  @else { <button type="button" class="btn btn-primary" (click)="startCamera()">Open camera</button> }
-                  <label class="btn btn-ghost">Upload a photo<input type="file" accept="image/*" class="sr-only" (change)="upload($event)" /></label>
+                <div class="row big-actions">
+                  @if (photo()) { <button type="button" class="btn btn-ghost" (click)="retake()">🔄 {{ t()('journey.retake') }}</button> }
+                  @else if (camOn()) { <button type="button" class="btn btn-primary" (click)="capture()">📸 {{ t()('journey.takePhoto') }}</button> }
+                  @else { <button type="button" class="btn btn-primary" (click)="startCamera()">📷 {{ t()('journey.openCamera') }}</button> }
+                  <label class="btn btn-ghost">🖼️ {{ t()('journey.upload') }}<input type="file" accept="image/*" class="sr-only" (change)="upload($event)" /></label>
                 </div>
               }
             </div>
           }
           @case ('reveal') {
             <div class="stack center reveal">
-              <chakra class="big" [steps]="steps()" [current]="idx()" [spinning]="running()" [finished]="finished()" [beads]="beads()" [hubText]="hub()" />
+              <chakra class="big" [steps]="steps()" [current]="idx()" [spinning]="running()" [finished]="finished()" [beads]="beads()" [hubText]="hub()" data-noread />
               @if (!running() && !finished()) {
-                <h2>All set{{ firstName() ? ', ' + firstName() : '' }}.</h2>
-                <p class="muted">Spin the chakra and seven AI agents get to work.@if (tryOn() && consent && photo()) { Putting the three cuts on your photo takes about two minutes.}</p>
+                <h2>{{ firstName() ? t()('journey.allSetName', { name: firstName() }) : t()('journey.allSet') }}</h2>
+                <p class="muted">{{ t()(tryOn() && consent && photo() ? 'journey.spinHintPhoto' : 'journey.spinHint') }}</p>
                 <div class="chips summary">@for (c of summary(); track c) { <span class="pill">{{ c }}</span> }</div>
-                <button type="button" class="btn btn-brand spinbtn" (click)="submit()">Spin the chakra</button>
+                <button type="button" class="btn btn-brand spinbtn" (click)="submit()">✨ {{ t()('journey.spin') }}</button>
               } @else {
-                <h2 aria-live="polite">{{ finished() ? 'Your looks are ready' : runningTitle() }}</h2>
+                <h2 aria-live="polite">{{ finished() ? t()('journey.ready') : t()('journey.working') }}</h2>
                 <ol class="agents">
                   @for (a of beads(); track a.id) {
-                    <li [class]="a.status"><span class="ic" aria-hidden="true">{{ a.status === 'done' ? '✓' : a.status === 'failed' ? '!' : '' }}</span>{{ a.label }}</li>
+                    <li [class]="a.status"><span class="ic" aria-hidden="true">{{ a.status === 'done' ? '✓' : a.status === 'failed' ? '!' : '' }}</span>{{ t()('agent.' + a.id, null, a.label) }}</li>
                   }
                 </ol>
               }
-              @if (error()) { <p class="err" role="alert">{{ error() }}</p> <button type="button" class="btn btn-primary" (click)="submit()">Try again</button> }
+              @if (error()) { <p class="err" role="alert">{{ error() }}</p> <button type="button" class="btn btn-primary" (click)="submit()">{{ t()('common.retry') }}</button> }
             </div>
           }
           @default {
@@ -148,14 +140,14 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
                 @for (f of sec.fields; track f.id) {
                   <question-field [field]="f" [value]="answers()[f.id]" (valueChange)="setAnswer(f.id, $event)" />
                   @if (f.id === 'self_report.face_shape' && measure(); as m) {
-                    <p class="from-photo small">📏 Measured from your photo: <strong>{{ shapeLabel(m.face_shape) }}</strong>. Change it if it looks wrong.</p>
+                    <p class="from-photo small">📏 {{ t()('journey.fromPhotoShape', { shape: shapeLabel(m.face_shape) }) }}</p>
                   }
                   @if (f.id === 'hair_length_now' && measure()?.hair; as h) {
-                    <p class="from-photo small">📏 From your photo: <strong>{{ h.length | titlecase }}</strong>.</p>
+                    <p class="from-photo small">📏 {{ t()('journey.fromPhoto') }}</p>
                   }
-                  @if (f.id === 'has_beard' && measure()?.beard) {
-                    <p class="from-photo small">📏 We saw a beard in your photo.</p>
-                  }
+                }
+                @if (sec.id === 'quick' && !withMore()) {
+                  <button type="button" class="btn btn-ghost more" (click)="addMore()">➕ {{ t()('journey.addMore') }}</button>
                 }
               </div>
             }
@@ -165,8 +157,8 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
     </main>
 
     @if (!isReveal()) {
-      <div class="actionbar"><div class="wrap bar">
-        @if (idx() > 0) { <button type="button" class="btn btn-ghost" (click)="back()">Back</button> }
+      <div class="actionbar" data-noread><div class="wrap bar">
+        @if (idx() > 0) { <button type="button" class="btn btn-ghost" (click)="back()">{{ t()('common.back') }}</button> }
         <button type="button" class="btn btn-primary" [disabled]="!canNext()" (click)="next()">{{ nextLabel() }}</button>
       </div></div>
     }
@@ -244,6 +236,8 @@ const SHAPE_LABEL: Record<string, string> = { oval: 'Oval', round: 'Round', squa
     .agents .running .ic { border: 2px solid var(--gold); border-right-color: transparent; background: none; animation: spin .8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .bar { display: flex; gap: 10px; max-width: 640px; }
+    .big-actions .btn { flex: 1; min-height: 60px; }
+    .more { width: 100%; }
     @media (min-width: 900px) { .bar { max-width: 1080px; justify-content: flex-end; } .bar .btn { flex: 0 0 200px; } }
   `],
 })
@@ -251,6 +245,9 @@ export class JourneyPage implements OnInit, OnDestroy {
   private api = inject(Api);
   private router = inject(Router);
   private session = inject(PhotoSession);
+  private i18n = inject(I18n);
+  readonly t = this.i18n.t;
+  withMore = signal(false);
   private video = viewChild<ElementRef<HTMLVideoElement>>('video');
 
   form = signal<IntakeForm | null>(null);
@@ -273,7 +270,7 @@ export class JourneyPage implements OnInit, OnDestroy {
   private stream = signal<MediaStream | null>(null);
   private pollTimer?: ReturnType<typeof setTimeout>;
 
-  steps = computed(() => journeySteps(this.form()));
+  steps = computed(() => journeySteps(this.form(), this.t(), this.withMore()));
   firstName = computed(() => String(this.answers()['name'] ?? '').trim());
   step = computed(() => this.steps().at(this.idx()));
   isReveal = computed(() => this.step()?.id === 'reveal');
@@ -281,33 +278,26 @@ export class JourneyPage implements OnInit, OnDestroy {
   beads = computed(() => this.agents().map(a => ({ id: a.id, label: a.title, status: this.stepStates()[a.id]?.status ?? 'pending' })));
   doneCount = computed(() => this.beads().filter(b => b.status === 'done' || b.status === 'skipped').length);
   hub = computed(() => {
-    if (this.finished()) return { big: '✓', small: 'ready' };
-    if (this.running()) return { big: `${this.doneCount()}/${this.agents().length}`, small: 'agents' };
+    if (this.finished()) return { big: '✓', small: this.t()('journey.readyShort') };
+    if (this.running()) return { big: `${this.doneCount()}/${this.agents().length}`, small: this.t()('journey.agents') };
     return null;
-  });
-  runningTitle = computed(() => {
-    const r = this.beads().find(b => b.status === 'running');
-    return r ? `${r.label}…` : 'Spinning up your agents…';
   });
   ratio = computed(() => { const s = this.imgSize(); return s ? `${s.w} / ${s.h}` : '3 / 4'; });
   maxW = computed(() => { const s = this.imgSize(); return s ? `calc(56vh * ${s.w / s.h})` : '100%'; });
   nextLabel = computed(() => {
     const id = this.step()?.id;
-    if (id === 'hello') return "Let's begin";
-    if (id === 'photo') return this.consent && this.photo() ? (this.measuring() ? 'Measuring…' : 'Use this photo') : 'Continue without photo';
-    return this.steps()[this.idx() + 1]?.id === 'reveal' ? 'Last step' : 'Next';
+    if (id === 'hello') return this.t()('journey.begin');
+    if (id === 'photo') return this.consent && this.photo() ? (this.measuring() ? this.t()('journey.measuring') : this.t()('journey.usePhoto')) : this.t()('journey.skipPhoto');
+    return this.steps()[this.idx() + 1]?.id === 'reveal' ? this.t()('journey.lastStep') : this.t()('common.next');
   });
   summary = computed(() => {
-    const a = this.answers(), m = this.measure(), out: string[] = [];
-    const label = (fid: string) => {
-      const f = this.form()?.sections.flatMap(s => s.fields).find(x => x.id === fid);
-      const v = a[fid];
-      if (!f || v == null || v === '') return null;
-      return Array.isArray(v) ? v.map(x => f.options?.find(o => o.value === x)?.label ?? x).join(', ') : (f.options?.find(o => o.value === v)?.label ?? v);
-    };
-    for (const id of ['gender', 'profession', 'maintenance', 'hair_length_now']) { const l = label(id); if (l) out.push(l); }
+    const a = this.answers(), m = this.measure(), out: string[] = [], t = this.t();
+    for (const id of ['gender', 'hair_length_now', 'maintenance']) {
+      const v = a[id];
+      if (v) out.push(t(`form.${id}.${v}`, null, String(v)));
+    }
     const face = a['self_report.face_shape'];
-    if (face) out.push(`${SHAPE_LABEL[face] ?? face} face${m && m.face_shape === face ? ' (measured)' : ''}`);
+    if (face) out.push(t('journey.faceShape', { shape: this.shapeLabel(face) }) + (m && m.face_shape === face ? ' 📏' : ''));
     return out;
   });
 
@@ -327,7 +317,8 @@ export class JourneyPage implements OnInit, OnDestroy {
   }
   ngOnDestroy() { this.stopCamera(); clearTimeout(this.pollTimer); }
 
-  shapeLabel(s: string) { return SHAPE_LABEL[s] ?? s; }
+  shapeLabel(s: string) { return this.t()(`form.self_report.face_shape.${s}`, null, s); }
+  addMore() { this.withMore.set(true); this.go(this.idx() + 1); }
   setAnswer(id: string, v: any) { this.answers.update(a => ({ ...a, [id]: v })); }
 
   canNext(): boolean {
@@ -357,7 +348,7 @@ export class JourneyPage implements OnInit, OnDestroy {
     try {
       this.stream.set(await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 } }, audio: false }));
       this.camOn.set(true);
-    } catch { this.camError.set('Camera not available. Use "Upload a photo" instead.'); }
+    } catch { this.camError.set('no-camera'); }
   }
   capture() {
     const v = this.video()?.nativeElement;
@@ -372,7 +363,7 @@ export class JourneyPage implements OnInit, OnDestroy {
     input.value = '';
     if (!file) return;
     this.stopCamera();
-    try { this.setPhoto(await fileToDataUrl(file)); } catch { this.measureError.set('That file could not be opened as a photo.'); }
+    try { this.setPhoto(await fileToDataUrl(file)); } catch { this.measureError.set('unreadable'); }
   }
   onImg(ev: Event) { const i = ev.target as HTMLImageElement; this.imgSize.set({ w: i.naturalWidth, h: i.naturalHeight }); }
 
@@ -401,9 +392,9 @@ export class JourneyPage implements OnInit, OnDestroy {
     const m = usePhoto ? this.measure() : null;
     try {
       const res = await this.api.startConsultation({
-        customer: { name: (this.answers()['name'] ?? '').trim() || null },
+        customer: { name: (this.answers()['name'] ?? '').trim() || null, phone: String(this.answers()['phone'] ?? '').trim() || null },
         consent: { photo_processing: usePhoto, store_photo: false },
-        answers: { ...this.answers(), name: (this.answers()['name'] ?? '').trim() || null, ...(m ? { photo_measure: {
+        answers: { ...this.answers(), language: this.i18n.lang(), name: (this.answers()['name'] ?? '').trim() || null, ...(m ? { photo_measure: {
           face_shape: m.face_shape, confidence: m.confidence, quality: m.quality, notes: m.notes, ratios: m.ratios,
           hair_length: m.hair?.length ?? null, hair_color: m.hair?.color ?? null, beard: m.beard,
           hair_rgb: m.hair?.rgb ?? null, skin_rgb: m.skin,
@@ -416,7 +407,7 @@ export class JourneyPage implements OnInit, OnDestroy {
     } catch (e: any) {
       this.running.set(false);
       if (e?.status === 401) { this.router.navigate(['/login'], { queryParams: { next: '/start' } }); return; }
-      this.error.set(e?.error?.detail ?? 'Could not reach Aaina. Check that the server is running and try again.');
+      this.error.set(e?.status === 429 || e?.status === 402 ? (e?.error?.detail ?? this.t()('common.netFail')) : this.t()('common.netFail'));
     }
   }
   private poll(id: string) {
@@ -427,7 +418,7 @@ export class JourneyPage implements OnInit, OnDestroy {
         this.pollTimer = setTimeout(() => this.router.navigate(['/looks', id], { queryParams: { t: this.api.tenant() } }), 1300);
         return;
       }
-      if (c.status === 'failed') { this.running.set(false); this.error.set('Something went wrong while preparing your looks.'); return; }
+      if (c.status === 'failed') { this.running.set(false); this.error.set(this.t()('journey.failed')); return; }
       this.pollTimer = setTimeout(() => this.poll(id), 700);
     }).catch(() => { this.pollTimer = setTimeout(() => this.poll(id), 1500); });
   }

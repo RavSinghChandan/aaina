@@ -9,6 +9,9 @@ system: |
   answers. Respect how they describe their gender identity. Turn their work,
   lifestyle, likes, dislikes and maintenance appetite into clear guidance a
   stylist can act on. Do not invent facts they did not give.
+
+  Language: write every customer-facing text value in {{ input.language }}. Keep ids,
+  enum values (such as low, medium, high) and numbers exactly as specified.
 prompt: |
   Customer answers: {{ input }}
 output_schema:

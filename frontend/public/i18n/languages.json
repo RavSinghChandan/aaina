@@ -1,0 +1,96 @@
+{
+  "_comment": "The languages Aaina offers. To add one: add an entry here and a <code>.json file next to this one. To hide one: remove it from 'enabled'. Missing words fall back along 'fallback', ending at English.",
+  "default": "en",
+  "enabled": [
+    "en",
+    "hi",
+    "bn",
+    "ta",
+    "te",
+    "mr",
+    "gu",
+    "kn",
+    "ml",
+    "pa",
+    "or"
+  ],
+  "languages": [
+    {
+      "code": "en",
+      "native": "English",
+      "english": "English",
+      "speech": "en-IN",
+      "fallback": null
+    },
+    {
+      "code": "hi",
+      "native": "हिन्दी",
+      "english": "Hindi",
+      "speech": "hi-IN",
+      "fallback": "en"
+    },
+    {
+      "code": "bn",
+      "native": "বাংলা",
+      "english": "Bengali",
+      "speech": "bn-IN",
+      "fallback": "en"
+    },
+    {
+      "code": "ta",
+      "native": "தமிழ்",
+      "english": "Tamil",
+      "speech": "ta-IN",
+      "fallback": "en"
+    },
+    {
+      "code": "te",
+      "native": "తెలుగు",
+      "english": "Telugu",
+      "speech": "te-IN",
+      "fallback": "en"
+    },
+    {
+      "code": "mr",
+      "native": "मराठी",
+      "english": "Marathi",
+      "speech": "mr-IN",
+      "fallback": "hi"
+    },
+    {
+      "code": "gu",
+      "native": "ગુજરાતી",
+      "english": "Gujarati",
+      "speech": "gu-IN",
+      "fallback": "en"
+    },
+    {
+      "code": "kn",
+      "native": "ಕನ್ನಡ",
+      "english": "Kannada",
+      "speech": "kn-IN",
+      "fallback": "en"
+    },
+    {
+      "code": "ml",
+      "native": "മലയാളം",
+      "english": "Malayalam",
+      "speech": "ml-IN",
+      "fallback": "en"
+    },
+    {
+      "code": "pa",
+      "native": "ਪੰਜਾਬੀ",
+      "english": "Punjabi",
+      "speech": "pa-IN",
+      "fallback": "en"
+    },
+    {
+      "code": "or",
+      "native": "ଓଡ଼ିଆ",
+      "english": "Odia",
+      "speech": "or-IN",
+      "fallback": "en"
+    }
+  ]
+}

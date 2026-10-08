@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable
 
 from .manifests import AgentSpec, Registry, TenantSpec, WorkflowSpec
-from .schema import check_grounding, validate
+from .schema import check_grounding, coerce, validate
 from .templating import truthy
 
 log = logging.getLogger("aaina.engine")
@@ -150,6 +150,8 @@ class Engine:
             llm = self.providers["llm"]
             try:
                 out = await llm.run(agent, ctx)
+                if agent.output_schema:
+                    out = coerce(out, agent.output_schema)
                 problems = validate(out, agent.output_schema) if agent.output_schema else []
                 problems += check_grounding(out, agent.ground, self.registry.catalog, ctx)
                 if problems:

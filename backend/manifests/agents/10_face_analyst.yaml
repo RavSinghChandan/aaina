@@ -12,6 +12,9 @@ system: |
   skin concerns, and beard. Be respectful and neutral. Never guess age, caste,
   religion, health conditions or anything not needed for a haircut. If the photo
   is unclear, say so and lean on what the customer told you.
+
+  Language: write every customer-facing text value in {{ input.language }}. Keep ids,
+  enum values (such as low, medium, high) and numbers exactly as specified.
 prompt: |
   What the customer told us about themselves: {{ input.self_report }}
   Gender identity: {{ input.gender }}. Current hair length: {{ input.hair_length_now }}.

@@ -87,6 +87,14 @@ def normalise_answers(answers: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+# The language the customer reads, from the app's language picker. Agents write
+# their customer-facing text in it; anything unknown is English.
+LANGUAGE_NAMES = {
+    "en": "English", "hi": "Hindi", "bn": "Bengali", "ta": "Tamil", "te": "Telugu", "mr": "Marathi",
+    "gu": "Gujarati", "kn": "Kannada", "ml": "Malayalam", "pa": "Punjabi", "or": "Odia",
+}
+
+
 # ------------------------------------------------------------------ models
 class TenantIn(BaseModel):
     slug: str
@@ -186,13 +194,16 @@ async def start_consultation(body: ConsultationIn, background: BackgroundTasks, 
     charge(user)                                        # per-user and whole-app daily caps protect the AI key
     photo = parse_image(body.photo)
     extras = [img for img in (parse_image(p) for p in body.extra_photos) if img]
-    answers = normalise_answers(body.answers)
+    raw = dict(body.answers)
+    phone_answer = str(raw.pop("phone", "") or "").strip()   # for reminders only; never sent to an AI model
+    answers = normalise_answers(raw)
+    answers["language"] = LANGUAGE_NAMES.get(str(answers.get("language") or "en"), "English")
     keep_photo = bool(photo) and spec.settings.store_photos and body.consent.store_photo
 
     with st.sessions() as db:
         if month_usage(db, t.id) >= PLAN_LIMITS.get(spec.plan, 50):
             raise HTTPException(402, "This salon has used its consultations for the month")
-        phone = (body.customer.get("phone") or "").strip() or None
+        phone = (body.customer.get("phone") or phone_answer or "").strip() or None
         customer = db.scalar(select(Customer).where(Customer.tenant_id == t.id, Customer.phone == phone)) if phone else None
         if not customer:
             customer = Customer(tenant_id=t.id, phone=phone)
@@ -296,7 +307,8 @@ async def choose_style(cid: str, body: ChooseIn, t: Tenant = Depends(get_tenant)
 
 # ------------------------------------------------------------------ customers & agenda
 @router.get("/t/{slug}/customers")
-def list_customers(q: str | None = None, t: Tenant = Depends(get_tenant), st=Depends(state)):
+def list_customers(q: str | None = None, t: Tenant = Depends(get_tenant), st=Depends(state), user: dict = Depends(require_user)):
+    check_tenant(user, t.slug)
     with st.sessions() as db:
         stmt = select(Customer).where(Customer.tenant_id == t.id).order_by(Customer.created_at.desc()).limit(200)
         if q:
@@ -312,7 +324,8 @@ def list_customers(q: str | None = None, t: Tenant = Depends(get_tenant), st=Dep
 
 
 @router.get("/t/{slug}/customers/{cust_id}")
-def get_customer(cust_id: str, t: Tenant = Depends(get_tenant), st=Depends(state)):
+def get_customer(cust_id: str, t: Tenant = Depends(get_tenant), st=Depends(state), user: dict = Depends(require_user)):
+    check_tenant(user, t.slug)
     with st.sessions() as db:
         cu = db.scalar(select(Customer).where(Customer.id == cust_id, Customer.tenant_id == t.id))
         if not cu:
@@ -325,7 +338,8 @@ def get_customer(cust_id: str, t: Tenant = Depends(get_tenant), st=Depends(state
 
 
 @router.delete("/t/{slug}/customers/{cust_id}", status_code=204)
-def erase_customer(cust_id: str, t: Tenant = Depends(get_tenant), st=Depends(state)):
+def erase_customer(cust_id: str, t: Tenant = Depends(get_tenant), st=Depends(state), user: dict = Depends(require_user)):
+    check_tenant(user, t.slug)
     """Right to erasure: the customer and everything linked to them."""
     with st.sessions() as db:
         cu = db.scalar(select(Customer).where(Customer.id == cust_id, Customer.tenant_id == t.id))
@@ -336,7 +350,8 @@ def erase_customer(cust_id: str, t: Tenant = Depends(get_tenant), st=Depends(sta
 
 
 @router.get("/t/{slug}/agenda")
-def agenda(days: int = 14, t: Tenant = Depends(get_tenant), st=Depends(state)):
+def agenda(days: int = 14, t: Tenant = Depends(get_tenant), st=Depends(state), user: dict = Depends(require_user)):
+    check_tenant(user, t.slug)
     """Who is due for what in the next N days - the salon's follow-up list."""
     days = max(1, min(days, 90))
     today = dt.date.today()

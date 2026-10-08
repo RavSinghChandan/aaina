@@ -1,9 +1,9 @@
-export interface FormOption { value: string; label: string; }
+export interface FormOption { value: string; label: string; icon?: string; }
 export interface FormField {
-  id: string; label: string; type: 'text' | 'choice' | 'multi' | 'tags' | 'toggle';
+  id: string; label: string; type: 'text' | 'tel' | 'choice' | 'multi' | 'tags' | 'toggle';
   options?: FormOption[]; optional?: boolean; placeholder?: string; hint?: string;
 }
-export interface FormSection { id: string; title: string; fields: FormField[]; }
+export interface FormSection { id: string; title: string; fields: FormField[]; more?: boolean; }
 export interface IntakeForm { id: string; title: string; sections: FormSection[]; }
 export interface UiEntry { id: string; title: string; view: string; order: number; hidden: boolean; description: string; }
 export interface WorkflowMeta { title: string; steps: { id: string; agent: string; title: string }[]; }
@@ -18,3 +18,10 @@ export interface Consultation {
   steps: Record<string, StepState>; outputs: Record<string, any>; chosen_style_id: string | null;
   error: string | null; created_at: string; customer: { id: string; name: string | null }; photo: string | null;
 }
+export interface CustomerRow { id: string; name: string | null; phone: string | null; visits: number; last_visit: string | null; chosen_style_id: string | null; }
+export interface CustomerDetail {
+  id: string; name: string | null; phone: string | null;
+  consultations: { id: string; status: string; created_at: string; chosen_style_id: string | null }[];
+  calendar: { events: { date: string; title: string; kind: string; detail: string }[] } | null;
+}
+export interface AgendaItem { date: string; title: string; kind: string; detail: string; customer: { id: string; name: string | null; phone: string | null }; }
