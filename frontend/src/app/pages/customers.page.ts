@@ -16,6 +16,7 @@ import { TopBar } from '../shared/top-bar';
     <main class="wrap page narrow stack">
       <h1 class="pt">👥 {{ t()('customers.title') }}</h1>
       <input class="input" type="search" [placeholder]="t()('customers.search')" [(ngModel)]="q" (ngModelChange)="search()" data-noread />
+      @if (rows().length) { <button type="button" class="btn btn-ghost btn-sm export" (click)="exportCsv()" data-noread>⬇ {{ t()('customers.export') }}</button> }
       @if (error()) { <p class="err" role="alert">{{ error() }}</p> }
       @if (loading()) { <div class="skeleton" style="height:180px"></div> }
       @else if (!rows().length) {
@@ -51,6 +52,7 @@ import { TopBar } from '../shared/top-bar';
     </main>
   `,
   styles: [`
+    .export { align-self: flex-start; }
     .pt { font-family: var(--font); font-size: 1.6rem; font-weight: 800; margin: 0; }
     .rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
     .rows > li { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
@@ -87,5 +89,17 @@ export class CustomersPage implements OnInit {
     if (this.openId() === r.id) { this.openId.set(null); return; }
     this.openId.set(r.id); this.detail.set(null);
     try { this.detail.set(await this.api.customer(r.id)); } catch { this.error.set(this.t()('common.netFail')); }
+  }
+
+  /** The salon's customer list as a CSV file, for its own billing app or WhatsApp tool. */
+  async exportCsv() {
+    try {
+      const csv = await this.api.customersCsv();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+      a.download = 'aaina-customers.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch { this.error.set(this.t()('common.netFail')); }
   }
 }

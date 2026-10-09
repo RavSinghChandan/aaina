@@ -23,6 +23,7 @@
  "common.wait": "Please wait…",
  "common.yes": "Yes",
  "customers.empty": "No customers yet. Start your first consultation.",
+ "customers.export": "Download list (CSV)",
  "customers.noName": "Customer",
  "customers.search": "Search by name or phone",
  "customers.seeLooks": "See looks",

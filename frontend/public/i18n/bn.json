@@ -23,6 +23,7 @@
  "common.wait": "অপেক্ষা করুন…",
  "common.yes": "হ্যাঁ",
  "customers.empty": "এখনও কোনো গ্রাহক নেই। প্রথম পরামর্শ শুরু করুন।",
+ "customers.export": "তালিকা ডাউনলোড করুন (CSV)",
  "customers.noName": "গ্রাহক",
  "customers.search": "নাম বা ফোন দিয়ে খুঁজুন",
  "customers.seeLooks": "লুক দেখুন",

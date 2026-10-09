@@ -1,0 +1,18 @@
+{
+  "mode": "live",
+  "model": "deepseek",
+  "profiles": 15,
+  "scores": {
+    "catalog": 1.0,
+    "audience": 1.0,
+    "dislikes": 1.0,
+    "maintenance": 1.0,
+    "distinct": 1.0,
+    "language": 1.0,
+    "model_kept": 1.0
+  },
+  "repairs": 1,
+  "repaired": 1,
+  "p50_ms": 5167,
+  "failures": []
+}

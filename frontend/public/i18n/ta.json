@@ -23,6 +23,7 @@
  "common.wait": "காத்திருக்கவும்…",
  "common.yes": "ஆம்",
  "customers.empty": "இன்னும் வாடிக்கையாளர்கள் இல்லை. முதல் ஆலோசனையைத் தொடங்குங்கள்.",
+ "customers.export": "பட்டியலைப் பதிவிறக்கு (CSV)",
  "customers.noName": "வாடிக்கையாளர்",
  "customers.search": "பெயர் அல்லது தொலைபேசியால் தேடு",
  "customers.seeLooks": "லுக்குகள் பார்",

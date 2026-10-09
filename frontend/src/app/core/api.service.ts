@@ -30,6 +30,9 @@ export class Api {
     const qs = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
     return this.signedOut401(firstValueFrom(this.http.get<CustomerRow[]>(this.url(`/t/${this.tenant()}/customers${qs}`), { headers: this.auth.headers() })));
   }
+  customersCsv() {
+    return this.signedOut401(firstValueFrom(this.http.get(this.url(`/t/${this.tenant()}/customers.csv`), { headers: this.auth.headers(), responseType: 'text' })));
+  }
   customer(id: string) {
     return this.signedOut401(firstValueFrom(this.http.get<CustomerDetail>(this.url(`/t/${this.tenant()}/customers/${id}`), { headers: this.auth.headers() })));
   }

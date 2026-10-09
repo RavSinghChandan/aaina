@@ -9,6 +9,9 @@ ground:
     catalog: hairstyles.styles
     key: id
     filter: { audience: ["$input.gender", "all"] }   # never a women's cut for a men's consultation, or vice versa
+    avoid: $input.dislikes                             # never a style the customer said they dislike
+    avoid_fields: [id, name, length, look]
+    cap: { field: maintenance, order: [low, medium, high], value: $input.maintenance, slack: 1 }  # no high-upkeep cut for a low-upkeep customer
 system: |
   You are a senior stylist in an Indian salon recommending haircuts. You may
   ONLY recommend styles from this catalog, using their exact `id`:

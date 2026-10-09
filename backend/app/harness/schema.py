@@ -98,21 +98,81 @@ def _collect(node: Any, parts: list[str]) -> list[Any]:
 
 
 def check_grounding(output: Any, grounds: list[Any], catalog: dict[str, Any], ctx: dict[str, Any] | None = None) -> list[str]:
-    """Every value at `field` must exist as `key` in the catalog, and pass the ground's filter."""
+    """Every value at `field` must exist as `key` in the catalog and be one the customer allows."""
     problems: list[str] = []
     ctx = ctx or {}
     for g in grounds:
-        rows = {row.get(g.key): row for row in _collect(catalog, g.catalog.split(".")) if isinstance(row, dict)}
-        filters = {f: _resolve_allowed(vals, ctx) for f, vals in (getattr(g, "filter", None) or {}).items()}
+        rows = _rows(g, catalog)
+        allowed = allowed_rows(g, catalog, ctx)
         for value in _collect(output, g.field.split(".")):
             row = rows.get(value)
             if row is None:
                 problems.append(f"{g.field}={value!r} is not in catalog {g.catalog}")
-                continue
-            for fname, allowed in filters.items():
-                if allowed is not None and row.get(fname) not in allowed:
-                    problems.append(f"{g.field}={value!r} has {fname}={row.get(fname)!r}, allowed {sorted(allowed)}")
+            elif value not in allowed:
+                problems.append(f"{g.field}={value!r} is not allowed: {_why_not(g, row, ctx) or 'filtered out'}")
     return problems
+
+
+def allowed_rows(g: Any, catalog: dict[str, Any], ctx: dict[str, Any]) -> dict[Any, dict[str, Any]]:
+    """The catalog rows this customer may be offered, by key.
+
+    The filter (e.g. audience) is a hard rule. Preferences (avoid, cap) are
+    applied too, unless together they would leave fewer than `min_choices` rows;
+    then they are relaxed rather than return too few options.
+    """
+    rows = _rows(g, catalog)
+    hard = {k: r for k, r in rows.items() if not _why_not(g, r, ctx, preferences=False)}
+    strict = {k: r for k, r in hard.items() if not _why_not(g, r, ctx)}
+    return strict if len(strict) >= getattr(g, "min_choices", 0) else hard
+
+
+def narrow_catalog(catalog: dict[str, Any], grounds: list[Any], ctx: dict[str, Any]) -> dict[str, Any]:
+    """A copy of the catalog holding only the rows each ground allows, so a model never sees the rest."""
+    out = copy.deepcopy(catalog)
+    for g in grounds:
+        allowed = allowed_rows(g, catalog, ctx)
+        *parent, leaf = g.catalog.split(".")
+        node = out
+        for part in parent:
+            node = node.get(part, {}) if isinstance(node, dict) else {}
+        if isinstance(node, dict) and isinstance(node.get(leaf), list):
+            node[leaf] = [r for r in node[leaf] if isinstance(r, dict) and r.get(g.key) in allowed]
+    return out
+
+
+def _rows(g: Any, catalog: dict[str, Any]) -> dict[Any, dict[str, Any]]:
+    return {row.get(g.key): row for row in _collect(catalog, g.catalog.split(".")) if isinstance(row, dict)}
+
+
+def _why_not(g: Any, row: dict[str, Any], ctx: dict[str, Any], preferences: bool = True) -> str | None:
+    for fname, vals in (getattr(g, "filter", None) or {}).items():
+        allowed = _resolve_allowed(vals, ctx)
+        if allowed is not None and row.get(fname) not in allowed:
+            return f"{fname}={row.get(fname)!r}, allowed {sorted(allowed)}"
+    if not preferences:
+        return None
+    if getattr(g, "avoid", None):
+        words = _resolve(g.avoid, ctx) or []
+        text = " ".join(str(row.get(f, "")) for f in g.avoid_fields).lower()
+        hit = next((w for w in words if isinstance(w, str) and w.strip() and w.lower().strip() in text), None)
+        if hit:
+            return f"the customer dislikes {hit!r}"
+    cap = getattr(g, "cap", None)
+    if cap is not None:
+        level = _resolve(cap.value, ctx)
+        if level in cap.order and row.get(cap.field) in cap.order:
+            if cap.order.index(row[cap.field]) > cap.order.index(level) + cap.slack:
+                return f"{cap.field}={row[cap.field]!r} is above the customer's {level!r}"
+    return None
+
+
+def _resolve(value: Any, ctx: dict[str, Any]) -> Any:
+    if not (isinstance(value, str) and value.startswith("$")):
+        return value
+    node: Any = ctx
+    for part in value[1:].split("."):
+        node = node.get(part) if isinstance(node, dict) else None
+    return node
 
 
 def _resolve_allowed(values: list[str], ctx: dict[str, Any]) -> set[Any] | None:

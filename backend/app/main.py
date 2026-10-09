@@ -3,15 +3,17 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from pathlib import Path
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 
 from .api.auth import router as auth_router
 from .api.routes import router
+from . import ops
 from .db.models import Base, Tenant, make_engine, make_session_factory
 from .harness import Engine, Registry
 from .providers import OfflineProvider, make_llm
@@ -59,6 +61,20 @@ def create_app(database_url: str | None = None, llm: str | None = None) -> FastA
     app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["*"], allow_headers=["*"], allow_credentials=False)
     app.include_router(auth_router)
     app.include_router(router)
+
+    @app.middleware("http")
+    async def measure(request: Request, call_next):
+        """Latency and status per route template, for the owner's ops panel."""
+        if not request.url.path.startswith("/api/"):
+            return await call_next(request)
+        started = time.perf_counter()
+        response = await call_next(request)
+        route = request.url.path
+        for name, value in (request.scope.get("path_params") or {}).items():
+            route = route.replace(f"/{value}", f"/{{{name}}}", 1)
+        ops.record_request(f"{request.method} {route}", response.status_code, (time.perf_counter() - started) * 1000)
+        return response
+
     return app
 
 

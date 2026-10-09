@@ -23,6 +23,7 @@
  "common.wait": "ದಯವಿಟ್ಟು ಕಾಯಿರಿ…",
  "common.yes": "ಹೌದು",
  "customers.empty": "ಇನ್ನೂ ಗ್ರಾಹಕರಿಲ್ಲ. ಮೊದಲ ಸಲಹೆ ಪ್ರಾರಂಭಿಸಿ.",
+ "customers.export": "ಪಟ್ಟಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ (CSV)",
  "customers.noName": "ಗ್ರಾಹಕ",
  "customers.search": "ಹೆಸರು ಅಥವಾ ಫೋನ್‌ನಿಂದ ಹುಡುಕಿ",
  "customers.seeLooks": "ಲುಕ್ ನೋಡಿ",

@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable
 
 from .manifests import AgentSpec, Registry, TenantSpec, WorkflowSpec
-from .schema import check_grounding, coerce, validate
+from .schema import check_grounding, coerce, narrow_catalog, validate
 from .templating import truthy
 
 log = logging.getLogger("aaina.engine")
@@ -57,6 +57,15 @@ class Engine:
     def __init__(self, registry: Registry, providers: dict[str, Any]):
         self.registry = registry
         self.providers = providers      # {"llm": DeepSeek|Claude|None, "offline": OfflineProvider, "image": photo editor | None}
+        self.repairs = self.repaired = 0   # answers sent back once for a fix, and how many came back valid
+
+    async def _ask_and_check(self, llm: Any, agent: AgentSpec, ctx: dict[str, Any]) -> tuple[Any, list[str]]:
+        out = await llm.run(agent, ctx)
+        if agent.output_schema:
+            out = coerce(out, agent.output_schema)
+        problems = validate(out, agent.output_schema) if agent.output_schema else []
+        problems += check_grounding(out, agent.ground, self.registry.catalog, ctx)
+        return out, problems
 
     def choose_provider(self, agent: AgentSpec, tenant: TenantSpec) -> str:
         """'llm' when an AI provider can serve this agent, else 'offline'."""
@@ -131,6 +140,9 @@ class Engine:
         return result
 
     async def _execute(self, agent: AgentSpec, ctx: dict[str, Any], tenant: TenantSpec) -> tuple[Any, str]:
+        if agent.ground:
+            # The model and the offline rule only ever see the rows this customer allows.
+            ctx = {**ctx, "catalog": narrow_catalog(ctx.get("catalog") or self.registry.catalog, agent.ground, ctx)}
         # image agents: edit the customer's own photo when an image provider and a consented photo exist
         img = self.providers.get("image")
         if agent.kind == "image" and img is not None and getattr(img, "available", False) \
@@ -149,11 +161,14 @@ class Engine:
         if provider_name == "llm":
             llm = self.providers["llm"]
             try:
-                out = await llm.run(agent, ctx)
-                if agent.output_schema:
-                    out = coerce(out, agent.output_schema)
-                problems = validate(out, agent.output_schema) if agent.output_schema else []
-                problems += check_grounding(out, agent.ground, self.registry.catalog, ctx)
+                out, problems = await self._ask_and_check(llm, agent, ctx)
+                if problems:
+                    # One repair attempt: the model sees exactly what was wrong, then the rule takes over.
+                    repair = agent.model_copy(update={"prompt": f"{agent.prompt}\n\nYour previous answer was rejected: "
+                                                                f"{'; '.join(problems[:5])}. Answer again and fix exactly that."})
+                    out, problems = await self._ask_and_check(llm, repair, ctx)
+                    self.repairs += 1
+                    self.repaired += 0 if problems else 1
                 if problems:
                     raise StepError("schema: " + "; ".join(problems[:3]))
                 return out, getattr(llm, "name", "llm")

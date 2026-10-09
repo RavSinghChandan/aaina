@@ -4,15 +4,18 @@ from __future__ import annotations
 import asyncio
 import base64
 import binascii
+import csv
+import io
 import datetime as dt
 import os
 import re
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, select
 
+from .. import ops
 from ..db.models import Consultation, Customer, Tenant
 from .auth import charge, check_tenant, ensure_tenant, read_token, require_admin, require_user
 from ..harness.manifests import TenantSpec
@@ -237,6 +240,7 @@ async def run_consultation(st, cid: str, spec: TenantSpec, answers: dict[str, An
     ctx = {"input": answers, "images": images, "today": dt.date.today().isoformat()}
     try:
         result = await st.engine.run("consultation", ctx, spec, on_event=on_event)
+        ops.record_run(spec.slug, result.to_dict())
         await asyncio.to_thread(_finish, st, cid, result.to_dict())
     except Exception as exc:  # engine-level failure
         await asyncio.to_thread(_set_status, st, cid, "failed", str(exc)[:500])
@@ -321,6 +325,33 @@ def list_customers(q: str | None = None, t: Tenant = Depends(get_tenant), st=Dep
                         "last_visit": last.created_at.isoformat() if last else None,
                         "chosen_style_id": last.chosen_style_id if last else None})
         return out
+
+
+@router.get("/t/{slug}/customers.csv")
+def export_customers(t: Tenant = Depends(get_tenant), st=Depends(state), user: dict = Depends(require_user)) -> Response:
+    """The salon's customers as CSV, for its own billing app, CRM or WhatsApp tool. Only that salon's rows."""
+    check_tenant(user, t.slug)
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(["name", "phone", "visits", "first_visit", "last_visit", "chosen_style", "next_trim_due"])
+    today = dt.date.today().isoformat()
+    with st.sessions() as db:
+        for cu in db.scalars(select(Customer).where(Customer.tenant_id == t.id).order_by(Customer.created_at)).all():
+            visits = sorted(cu.consultations, key=lambda c: c.created_at)
+            last = visits[-1] if visits else None
+            done = next((c for c in reversed(visits) if c.status == "done"), None)
+            events = ((done.outputs or {}).get("calendar") or {}).get("events", []) if done else []
+            trim = min((e["date"] for e in events if e.get("kind") == "trim" and e.get("date", "") >= today), default="")
+            w.writerow([cu.name or "", cu.phone or "", len(visits), visits[0].created_at.date().isoformat() if visits else "",
+                        last.created_at.date().isoformat() if last else "", (last.chosen_style_id or "") if last else "", trim])
+    return Response(out.getvalue(), media_type="text/csv",
+                    headers={"Content-Disposition": f'attachment; filename="{t.slug}-customers.csv"'})
+
+
+@router.get("/admin/ops", dependencies=[Depends(require_admin)])
+def ops_view(st=Depends(state)) -> dict:
+    """Live service health: traffic, errors, latency, and per agent how often the model was kept, repaired or replaced."""
+    return ops.snapshot(st.engine.repairs, st.engine.repaired)
 
 
 @router.get("/t/{slug}/customers/{cust_id}")

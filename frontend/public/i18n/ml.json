@@ -23,6 +23,7 @@
  "common.wait": "കാത്തിരിക്കൂ…",
  "common.yes": "അതെ",
  "customers.empty": "ഇതുവരെ ഉപഭോക്താക്കളില്ല. ആദ്യ ഉപദേശം തുടങ്ങുക.",
+ "customers.export": "ലിസ്റ്റ് ഡൗൺലോഡ് ചെയ്യുക (CSV)",
  "customers.noName": "ഉപഭോക്താവ്",
  "customers.search": "പേരോ ഫോണോ വെച്ച് തിരയുക",
  "customers.seeLooks": "ലുക്കുകൾ കാണുക",

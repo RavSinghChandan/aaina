@@ -8,6 +8,59 @@ calendar that brings them back on time. Multi-tenant: every salon gets its own l
 * `frontend/` — Angular 21, mobile first, works on phones, tablets and the salon TV
 * `docs/ARCHITECTURE.md` — the design: harness, providers, tenancy, privacy
 
+**Live:** app https://aaina-ai.vercel.app · API https://aaina-api.onrender.com/api/health · [![CI](https://github.com/RavSinghChandan/aaina/actions/workflows/ci.yml/badge.svg)](https://github.com/RavSinghChandan/aaina/actions/workflows/ci.yml)
+
+## How it works
+
+```mermaid
+flowchart LR
+  S[Salon tablet<br/>Angular, 11 languages] -->|tenant token| API[FastAPI]
+  API --> E[Harness engine<br/>runs the YAML DAG]
+  E --> FA[face analyst<br/>MediaPipe on the phone]
+  E --> PB[profile builder]
+  FA & PB --> SR[style recommender]
+  SR --> PR[previews] & HC[hair care] --> CAL[care calendar]
+  E -->|each AI step| V{schema + catalog +<br/>customer's rules}
+  V -->|fails| RP[one repair:<br/>model sees the error] -->|fails again| OF[offline rule]
+  API --> OPS[ops: latency, fallbacks,<br/>repairs, salons today]
+```
+
+- **The model never sees a choice it may not make.** Before the style recommender runs, the harness cuts the catalog down to what this customer allows: their audience, nothing they dislike, nothing far above the upkeep they want. The answer is checked against the same rules after, in code.
+- **One repair, then a safe fallback.** If an answer breaks the schema or the rules, the model gets one retry with the exact error. If that fails too, a deterministic offline rule answers, so a customer in the chair always gets three valid haircuts.
+- **Features are data.** A new agent is a YAML file (prompt, inputs, output schema, UI view, offline rule) plus one line in a workflow. No core code changes.
+
+## Evals
+
+`python -m evals.run` (offline rules, free, in CI) and `python -m evals.run --live`
+(the real model). 15 customer profiles across men and women, 6 languages, six
+face shape, low to high upkeep, each with things they dislike. Every
+recommendation is checked in code:
+
+| Check | Live model, prompt rules only | Live model, rules enforced by the harness |
+|---|---|---|
+| Style exists in the catalog | 100% | 100% |
+| Right audience (men / women) | 100% | 100% |
+| **Nothing the customer dislikes** | **80%** (3 of 15 broke it) | **100%** |
+| No high-upkeep cut for a low-upkeep customer | 100% | 100% |
+| Three different styles | 100% | 100% |
+| Written in the customer's language | 100% | 100% |
+| AI answer kept (no fallback to rules) | 100% (recommender step) | 100% (every AI step; 1 answer repaired) |
+
+*Before* is the same model and prompt with the dislike rule only in the prompt:
+a customer who said "no fade" was offered a low taper fade. Model: DeepSeek, run
+on 9 Oct 2026; p50 about 5 s per consultation. Raw results are in
+`backend/evals/`. The profiles were written by me, and 15 is a small set: the
+point is that the rule is now enforced in code and checked on every build.
+
+## Running it
+
+| | |
+|---|---|
+| **Ops panel** | `/admin` (admin key): consultations, server-error rate, API calls, AI answers repaired, and per agent step the runs, how often the AI answer was kept or fell back, and p50/p95 latency. JSON at `GET /api/admin/ops`. |
+| **Sign-in** | A salon registers; the owner approves it at `/admin` and sends a signed tenant key with a one-click link. A salon can only read its own customers. |
+| **Limits** | Daily caps per user and for the whole app, and a monthly consultation limit per salon plan. |
+| **Integration** | `GET /api/t/{salon}/customers.csv` (signed-in salon only): name, phone, visits, last style and next trim date, for the salon's billing app, CRM or WhatsApp tool. Full API at `/docs`. |
+
 ---
 
 ## Run it locally
@@ -107,6 +160,6 @@ are uploaded by the customer, never scraped; one call erases a customer
 
 ## Not built yet
 
-Login and roles, Razorpay subscriptions (usage is already metered per salon per month),
+Roles inside a salon (owner vs stylist), Razorpay subscriptions (usage is already metered per salon per month),
 automated WhatsApp reminders (one-tap `wa.me` links work today), and a photorealistic
 image model for previews (plug it into `app/providers/images.py`).

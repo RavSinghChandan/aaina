@@ -1,0 +1,77 @@
+{
+  "mode": "live",
+  "model": "deepseek",
+  "profiles": 15,
+  "scores": {
+    "catalog": 1.0,
+    "audience": 1.0,
+    "dislikes": 0.8,
+    "maintenance": 1.0,
+    "distinct": 1.0,
+    "language": 1.0,
+    "model_kept": 1.0
+  },
+  "p50_ms": 5843,
+  "failures": [
+    {
+      "id": "p02",
+      "source": "deepseek",
+      "ms": 4129,
+      "checks": {
+        "catalog": true,
+        "audience": true,
+        "dislikes": false,
+        "maintenance": true,
+        "distinct": true,
+        "language": true,
+        "model_kept": true
+      },
+      "styles": [
+        "classic-side-part",
+        "crew-cut",
+        "textured-crop"
+      ],
+      "error": null
+    },
+    {
+      "id": "p05",
+      "source": "deepseek",
+      "ms": 5729,
+      "checks": {
+        "catalog": true,
+        "audience": true,
+        "dislikes": false,
+        "maintenance": true,
+        "distinct": true,
+        "language": true,
+        "model_kept": true
+      },
+      "styles": [
+        "u-cut",
+        "curly-layered",
+        "butterfly-cut"
+      ],
+      "error": null
+    },
+    {
+      "id": "p12",
+      "source": "deepseek",
+      "ms": 5843,
+      "checks": {
+        "catalog": true,
+        "audience": true,
+        "dislikes": false,
+        "maintenance": true,
+        "distinct": true,
+        "language": true,
+        "model_kept": true
+      },
+      "styles": [
+        "medium-flow",
+        "curtain-hair",
+        "low-taper-fade"
+      ],
+      "error": null
+    }
+  ]
+}

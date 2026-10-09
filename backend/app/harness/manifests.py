@@ -36,6 +36,21 @@ class GroundSpec(BaseModel):
     # value is a literal, or "$path" read from the workflow context. A resolved
     # value of "all" means "no restriction".
     filter: dict[str, list[str]] = Field(default_factory=dict)
+    # Optional customer preferences, enforced in code rather than left to the prompt.
+    # avoid: "$path" to a list of words; a row whose avoid_fields mention one is not allowed.
+    avoid: str | None = None
+    avoid_fields: list[str] = Field(default_factory=lambda: ["id", "name"])
+    # cap: a ranked field may not exceed the customer's level by more than `slack` steps.
+    cap: "CapSpec | None" = None
+    # Preferences are relaxed (the filter never is) if they would leave fewer choices than this.
+    min_choices: int = 3
+
+
+class CapSpec(BaseModel):
+    field: str                   # e.g. maintenance
+    order: list[str]             # low to high, e.g. [low, medium, high]
+    value: str                   # "$input.maintenance"
+    slack: int = 0
 
 
 class AgentSpec(BaseModel):
@@ -61,6 +76,9 @@ class AgentSpec(BaseModel):
         if self.kind in ("rule", "image") and not self.offline:
             raise ValueError(f"agent {self.id}: {self.kind} agents need offline.rule")
         return self
+
+
+GroundSpec.model_rebuild()
 
 
 class StepSpec(BaseModel):

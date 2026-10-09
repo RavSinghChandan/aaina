@@ -23,6 +23,7 @@
  "common.wait": "ਉਡੀਕ ਕਰੋ…",
  "common.yes": "ਹਾਂ",
  "customers.empty": "ਅਜੇ ਕੋਈ ਗਾਹਕ ਨਹੀਂ। ਪਹਿਲੀ ਸਲਾਹ ਸ਼ੁਰੂ ਕਰੋ।",
+ "customers.export": "ਸੂਚੀ ਡਾਊਨਲੋਡ ਕਰੋ (CSV)",
  "customers.noName": "ਗਾਹਕ",
  "customers.search": "ਨਾਮ ਜਾਂ ਫ਼ੋਨ ਨਾਲ ਲੱਭੋ",
  "customers.seeLooks": "ਲੁੱਕ ਦੇਖੋ",

@@ -23,6 +23,7 @@
  "common.wait": "थांबा…",
  "common.yes": "हो",
  "customers.empty": "अजून ग्राहक नाहीत. पहिला सल्ला सुरू करा.",
+ "customers.export": "यादी डाउनलोड करा (CSV)",
  "customers.noName": "ग्राहक",
  "customers.search": "नाव किंवा फोनने शोधा",
  "customers.seeLooks": "लुक पाहा",
