@@ -13,8 +13,8 @@ services:
         sync: false            # your DeepSeek key
       - key: AAINA_LLM
         value: deepseek
-      # DATABASE_URL is optional: without it the free instance uses SQLite (resets on redeploy).
-      # For lasting data add a free Neon / Supabase Postgres URL here later.
+      - key: DATABASE_URL       # a free Neon Postgres URL. Without it the free instance uses SQLite,
+        sync: false             # which is wiped whenever the server sleeps, restarts or redeploys.
       - key: ALLOWED_ORIGINS
         value: https://aaina-ai.vercel.app,https://aaina-eight.vercel.app
       - key: ADMIN_KEY

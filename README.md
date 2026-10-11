@@ -7,6 +7,7 @@ calendar that brings them back on time. Multi-tenant: every salon gets its own l
 * `backend/` — FastAPI + the agent **harness** (agents and workflows are YAML)
 * `frontend/` — Angular 21, mobile first, works on phones, tablets and the salon TV
 * `docs/ARCHITECTURE.md` — the design: harness, providers, tenancy, privacy
+* `docs/SYSTEM_DESIGN.md` — the whole system: requirements, data model, decisions, failure modes, scaling, interview Q&A
 
 **Live:** app https://aaina-ai.vercel.app · API https://aaina-api.onrender.com/api/health · [![CI](https://github.com/RavSinghChandan/aaina/actions/workflows/ci.yml/badge.svg)](https://github.com/RavSinghChandan/aaina/actions/workflows/ci.yml)
 

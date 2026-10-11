@@ -194,7 +194,7 @@ async def start_consultation(body: ConsultationIn, background: BackgroundTasks, 
         raise HTTPException(422, "Photo consent is required before we can analyse a photo")
     if len(body.extra_photos) > MAX_EXTRA_PHOTOS:
         raise HTTPException(422, f"Up to {MAX_EXTRA_PHOTOS} extra photos")
-    charge(user)                                        # per-user and whole-app daily caps protect the AI key
+    charge(user, st.sessions)                           # per-user and whole-app daily caps protect the AI key
     photo = parse_image(body.photo)
     extras = [img for img in (parse_image(p) for p in body.extra_photos) if img]
     raw = dict(body.answers)
@@ -351,7 +351,9 @@ def export_customers(t: Tenant = Depends(get_tenant), st=Depends(state), user: d
 @router.get("/admin/ops", dependencies=[Depends(require_admin)])
 def ops_view(st=Depends(state)) -> dict:
     """Live service health: traffic, errors, latency, and per agent how often the model was kept, repaired or replaced."""
-    return ops.snapshot(st.engine.repairs, st.engine.repaired)
+    eng = st.sessions.kw["bind"]
+    return {**ops.snapshot(st.engine.repairs, st.engine.repaired),
+            "storage": {"database": eng.dialect.name, "durable": not str(eng.url).startswith("sqlite")}}
 
 
 @router.get("/t/{slug}/customers/{cust_id}")

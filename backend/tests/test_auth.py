@@ -14,7 +14,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("AAINA_AUTH", "on")
     monkeypatch.setenv("ADMIN_KEY", "owner-secret")
     monkeypatch.setattr(auth, "DAILY_PER_USER", 2)
-    auth._attempts.clear(); auth._usage.clear()
+    auth._attempts.clear()
     with TestClient(create_app(database_url=f"sqlite:///{tmp_path}/t.db", llm="offline")) as c:
         yield c
 
@@ -76,7 +76,7 @@ def test_consultation_needs_sign_in(client):
 def test_key_survives_a_wiped_database(tmp_path, monkeypatch):
     """Free tier restarts wipe SQLite; a signed key still signs in and the tenant is rebuilt."""
     monkeypatch.setenv("AAINA_AUTH", "on")
-    auth._attempts.clear(); auth._usage.clear()
+    auth._attempts.clear()
     key = auth.tenant_key("glow-salon", "priya")
     with TestClient(create_app(database_url=f"sqlite:///{tmp_path}/fresh.db", llm="offline")) as c:
         r = login(c, key, "priya")

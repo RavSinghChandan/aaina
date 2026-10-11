@@ -16,7 +16,7 @@ ADMIN = {"x-admin-key": "owner-secret"}
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("AAINA_AUTH", "on")
     monkeypatch.setenv("ADMIN_KEY", "owner-secret")
-    auth._attempts.clear(); auth._usage.clear()
+    auth._attempts.clear()
     with TestClient(create_app(database_url=f"sqlite:///{tmp_path}/t.db", llm="offline")) as c:
         yield c
 

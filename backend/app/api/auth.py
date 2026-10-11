@@ -30,9 +30,10 @@ from collections import defaultdict, deque
 
 from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, text
 
-from ..db.models import Registration, Tenant
+from ..context import request_id
+from ..db.models import AuditLog, Registration, Tenant, UsageCounter
 
 router = APIRouter(prefix="/api")
 
@@ -57,8 +58,6 @@ _EMAIL = re.compile(r"^[^@\s]{1,64}@[^@\s]+\.[a-z]{2,}$", re.I)
 _USERNAME = re.compile(r"^[a-z0-9][a-z0-9._-]{1,31}$")
 
 _attempts: dict[str, deque[float]] = defaultdict(deque)
-_usage: dict[str, int] = defaultdict(int)
-_usage_day = {"day": ""}
 
 
 def auth_required() -> bool:
@@ -253,6 +252,21 @@ def _row(r: Registration) -> dict:
             "created_at": r.created_at.isoformat() if r.created_at else None}
 
 
+def audit(db, action: str, target: str, detail: dict | None = None) -> None:
+    db.add(AuditLog(actor="owner", action=action, target=target or "", detail=detail or {}, request_id=request_id()))
+    db.commit()
+
+
+@router.get("/admin/audit")
+def audit_log(request: Request, x_admin_key: str | None = Header(default=None)):
+    """Who was given or lost access, newest first, with the request id of each change."""
+    require_admin(x_admin_key)
+    with request.app.state.sessions() as db:
+        rows = db.scalars(select(AuditLog).order_by(AuditLog.id.desc()).limit(50)).all()
+        return [{"at": r.at.isoformat(), "actor": r.actor, "action": r.action, "target": r.target,
+                 "detail": r.detail, "request_id": r.request_id} for r in rows]
+
+
 @router.get("/admin/registrations")
 def list_registrations(request: Request, x_admin_key: str | None = Header(default=None)):
     require_admin(x_admin_key)
@@ -267,7 +281,9 @@ def approve(rid: str, body: ApproveIn, request: Request, x_admin_key: str | None
         reg = db.get(Registration, rid)
         if not reg:
             raise HTTPException(404, "Request not found")
-        return _issue(db, reg, body.username)
+        out = _issue(db, reg, body.username)
+        audit(db, "approve", out["tenant"], {"business": reg.business, "username": out["username"]})
+        return out
 
 
 @router.post("/admin/registrations/{rid}/reject")
@@ -279,6 +295,7 @@ def reject(rid: str, request: Request, x_admin_key: str | None = Header(default=
             raise HTTPException(404, "Request not found")
         reg.status = "revoked" if reg.status == "approved" else "rejected"
         db.commit()
+        audit(db, "revoke" if reg.status == "revoked" else "reject", reg.tenant_slug or reg.id, {"business": reg.business})
         return {"id": reg.id, "status": reg.status}
 
 
@@ -290,7 +307,9 @@ def issue_directly(body: IssueIn, request: Request, x_admin_key: str | None = He
         reg = Registration(business=body.business.strip(), owner=body.owner.strip(), email=body.email.strip().lower(), phone="", city="")
         db.add(reg)
         db.flush()
-        return _issue(db, reg, body.username)
+        out = _issue(db, reg, body.username)
+        audit(db, "issue", out["tenant"], {"business": reg.business, "username": out["username"]})
+        return out
 
 
 # ------------------------------------------------------------------ guards for the AI endpoints
@@ -310,22 +329,24 @@ def check_tenant(user: dict, slug: str) -> None:
         raise HTTPException(403, "You can only work inside your own salon.")
 
 
-def charge(user: dict) -> None:
-    """Count one AI run against the per-user, per-network and whole-app daily caps."""
+def charge(user: dict, sessions) -> None:
+    """Count one AI run against the per-user, per-network and whole-app daily caps (kept in the database)."""
     if not auth_required():
         return
     today = time.strftime("%Y-%m-%d")
-    if _usage_day["day"] != today:
-        _usage.clear()
-        _usage_day["day"] = today
-    if _usage["__total__"] >= DAILY_TOTAL:
-        raise HTTPException(429, "Today's free limit for the whole app is used up. Please come back tomorrow.")
     who, _, ip = user["key"].partition("|")
-    if _usage["u:" + who] >= DAILY_PER_USER:
-        raise HTTPException(429, f"You have used today's {DAILY_PER_USER} consultations. Please come back tomorrow.")
-    if ip and _usage["ip:" + ip] >= DAILY_PER_IP:
-        raise HTTPException(429, "Today's consultations from this network are used up. Please come back tomorrow.")
-    _usage["u:" + who] += 1
-    if ip:
-        _usage["ip:" + ip] += 1
-    _usage["__total__"] += 1
+    keys = ["__total__", "u:" + who] + (["ip:" + ip] if ip else [])
+    with sessions() as db:
+        rows = db.scalars(select(UsageCounter).where(UsageCounter.day == today, UsageCounter.key.in_(keys))).all()
+        used = {k: 0 for k in keys} | {r.key: r.count for r in rows}
+        if used["__total__"] >= DAILY_TOTAL:
+            raise HTTPException(429, "Today's free limit for the whole app is used up. Please come back tomorrow.")
+        if used["u:" + who] >= DAILY_PER_USER:
+            raise HTTPException(429, f"You have used today's {DAILY_PER_USER} consultations. Please come back tomorrow.")
+        if ip and used["ip:" + ip] >= DAILY_PER_IP:
+            raise HTTPException(429, "Today's consultations from this network are used up. Please come back tomorrow.")
+        # One atomic upsert per key; the same SQL on Postgres and SQLite (3.24+).
+        for k in keys:
+            db.execute(text("INSERT INTO usage_counters (day, key, count) VALUES (:d, :k, 1) "
+                            "ON CONFLICT (day, key) DO UPDATE SET count = usage_counters.count + 1"), {"d": today, "k": k})
+        db.commit()

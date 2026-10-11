@@ -81,6 +81,27 @@ class Consultation(Base):
     customer: Mapped[Customer] = relationship(back_populates="consultations")
 
 
+class UsageCounter(Base):
+    """AI runs per salon user, per network and in total, per day. In the database, so a
+    restart (every time the free server sleeps) does not reset the caps that bound the AI bill."""
+    __tablename__ = "usage_counters"
+    day: Mapped[str] = mapped_column(String(10), primary_key=True)
+    key: Mapped[str] = mapped_column(String(200), primary_key=True)
+    count: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class AuditLog(Base):
+    """Every owner action that grants or removes access: who, what, when, and the request id."""
+    __tablename__ = "audit_log"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
+    actor: Mapped[str] = mapped_column(String(64))
+    action: Mapped[str] = mapped_column(String(32))
+    target: Mapped[str] = mapped_column(String(64))
+    detail: Mapped[dict] = mapped_column(JSON, default=dict)
+    request_id: Mapped[str] = mapped_column(String(32), default="")
+
+
 def make_engine(url: str | None = None):
     url = url or os.getenv("DATABASE_URL", "sqlite:///./aaina.db")
     if url.startswith("postgres://"):           # Render / Heroku style URLs
