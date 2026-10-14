@@ -16,3 +16,15 @@ def set_request_id(value: str):
 
 def reset_request_id(token) -> None:
     _request_id.reset(token)
+
+
+_admin: ContextVar[str] = ContextVar("admin", default="owner")
+
+
+def admin_name() -> str:
+    """Which admin made this request: "owner" for ADMIN_KEY, or the name given in ADMIN_KEYS."""
+    return _admin.get()
+
+
+def set_admin_name(value: str) -> None:
+    _admin.set(value)

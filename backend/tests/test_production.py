@@ -117,3 +117,18 @@ def test_each_request_is_one_json_log_line(db_url, caplog):
     line = json.loads(logs.JsonFormatter().format(next(x for x in caplog.records if x.getMessage() == "request")))
     assert line["request_id"] == r.headers["x-request-id"]
     assert (line["method"], line["route"], line["status"]) == ("GET", "/api/health", 200)
+
+
+def test_each_teammate_has_their_own_admin_key(db_url, monkeypatch):
+    monkeypatch.setenv("ADMIN_KEYS", "priya:priya-key-0123456789ab, rahul:rahul-key-0123456789ab, typo:short")
+    with app_on(db_url) as c:
+        rid = c.post("/api/auth/register", json={"business": "Glow Salon", "owner": "Priya", "email": "p@example.com",
+                                                 "phone": "9000000001"}).json()["id"]
+        assert c.get("/api/admin/registrations", headers={"x-admin-key": "short"}).status_code == 401
+        assert c.get("/api/admin/registrations", headers={"x-admin-key": "nope"}).status_code == 401
+        approved = c.post(f"/api/admin/registrations/{rid}/approve", json={"username": "priya"},
+                          headers={"x-admin-key": "priya-key-0123456789ab"})
+        assert approved.status_code == 200
+        c.post(f"/api/admin/registrations/{rid}/reject", headers=ADMIN)
+        log = c.get("/api/admin/audit", headers={"x-admin-key": "rahul-key-0123456789ab"}).json()
+        assert [(e["action"], e["actor"]) for e in log] == [("revoke", "owner"), ("approve", "priya")]

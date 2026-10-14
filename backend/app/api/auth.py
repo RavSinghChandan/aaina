@@ -32,7 +32,7 @@ from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select, text
 
-from ..context import request_id
+from ..context import admin_name, request_id, set_admin_name
 from ..db.models import AuditLog, Registration, Tenant, UsageCounter
 
 router = APIRouter(prefix="/api")
@@ -70,15 +70,25 @@ def derived_admin_key() -> str:
     return hashlib.sha256(b"aaina-admin:" + _ai_key().encode()).hexdigest()[:24] if _ai_key() else ""
 
 
+def admin_keys() -> dict[str, str]:
+    """Every valid admin key and whose it is. ADMIN_KEY is the owner's; ADMIN_KEYS adds one per
+    teammate as comma-separated name:key pairs, so each can be removed without changing the others."""
+    keys = {k: "owner" for k in (os.getenv("ADMIN_KEY", ""), derived_admin_key()) if k}
+    for entry in os.getenv("ADMIN_KEYS", "").split(","):
+        name, _, key = entry.strip().rpartition(":")
+        if name.strip() and len(key.strip()) >= 16:      # a short key is a typo, not a password
+            keys[key.strip()] = name.strip()
+    return keys
+
+
 def require_admin(x_admin_key: str | None = Header(default=None)) -> None:
     given = (x_admin_key or "").strip()
-    if not auth_required() and not os.getenv("ADMIN_KEY"):
-        return                                   # local development: admin is open unless ADMIN_KEY is set
-    valid = [k for k in (os.getenv("ADMIN_KEY", ""), derived_admin_key()) if k]
-    if not valid:
+    if not auth_required() and not os.getenv("ADMIN_KEY") and not os.getenv("ADMIN_KEYS"):
+        return                                   # local development: admin is open unless a key is set
+    match = next((name for key, name in admin_keys().items() if hmac.compare_digest(given, key)), None)
+    if match is None:
         raise HTTPException(401, "Admin key required")
-    if not any(hmac.compare_digest(given, k) for k in valid):
-        raise HTTPException(401, "Admin key required")
+    set_admin_name(match)
 
 
 # ------------------------------------------------------------------ signing
@@ -253,7 +263,7 @@ def _row(r: Registration) -> dict:
 
 
 def audit(db, action: str, target: str, detail: dict | None = None) -> None:
-    db.add(AuditLog(actor="owner", action=action, target=target or "", detail=detail or {}, request_id=request_id()))
+    db.add(AuditLog(actor=admin_name(), action=action, target=target or "", detail=detail or {}, request_id=request_id()))
     db.commit()
 
 

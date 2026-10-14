@@ -19,6 +19,8 @@ services:
         value: https://aaina-ai.vercel.app,https://aaina-eight.vercel.app
       - key: ADMIN_KEY
         generateValue: true
+      - key: ADMIN_KEYS         # one admin key per teammate: name:key,name2:key2 (remove one to revoke it)
+        sync: false
       # Sign-in: visitors need an access code before the AI runs (protects the DeepSeek key).
       - key: AAINA_ENV
         value: production        # with no code set, consultations stay locked (fail closed)

@@ -108,6 +108,7 @@ offline rule automatically — a consultation never breaks in front of a custome
    * `DEEPSEEK_API_KEY` = your DeepSeek key (leave empty to run fully offline)
    * `ALLOWED_ORIGINS` = your Vercel URL, e.g. `https://aaina.vercel.app`
    * `ADMIN_KEY` is generated — keep it; you need it to create salons.
+   * To give a teammate admin access, add `ADMIN_KEYS` as `name:key` pairs separated by commas (a key of 16+ characters each). Each person gets their own key, the audit log shows who approved what, and removing a pair revokes only that person.
    Check `https://<your-service>.onrender.com/api/health`.
 3. **App — Vercel.** In `frontend/src/app/core/config.ts` set `PROD_API` to your Render
    URL, then `cd frontend && npx vercel deploy --prod`. Add your own domain in Vercel.
